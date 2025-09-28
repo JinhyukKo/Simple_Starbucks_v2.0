@@ -13,6 +13,8 @@ $stmt = $pdo->prepare("SELECT user_id FROM password_resets WHERE token_hash = ? 
 $stmt->execute([$token]);
 $password_reset = $stmt->fetch();
 
+
+
 if (!$password_reset) {
     die("만료되었거나 유효하지 않은 토큰입니다.");
 }
@@ -27,11 +29,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
             
             // 비밀번호 업데이트 및 토큰 초기화
-            $stmt = $pdo->prepare("UPDATE users SET password = ?, reset_token = NULL, reset_token_expiry = NULL WHERE id = ?");
-            $stmt->execute([$hashed_password, $user['id']]);
+            $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
+            $stmt->execute([$hashed_password, $password_reset['user_id']]);
             
             $_SESSION['message'] = "비밀번호가 성공적으로 변경되었습니다.";
-            header('Location: login.php');
+            header('Location: /auth/login.php');
             exit();
         } else {
             $error = "비밀번호는 8자 이상이어야 합니다.";
@@ -56,14 +58,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     <form method="POST">
         <div>
-            <label>새 비밀번호:</label>
+            <label>New Password:</label>
             <input type="password" name="password" required minlength="8">
         </div>
         <div>
-            <label>비밀번호 확인:</label>
+            <label>Confirm :</label>
             <input type="password" name="confirm_password" required minlength="8">
         </div>
-        <button type="submit">비밀번호 변경</button>
+        <button type="submit">Change Password</button>
     </form>
+    <a href="./login.php"> Login </a>
 </body>
 </html>

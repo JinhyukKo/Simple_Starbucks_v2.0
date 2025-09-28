@@ -17,6 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($user) {
             // 재설정 토큰 생성
             $token = bin2hex(random_bytes(50));
+            date_default_timezone_set('Asia/Seoul');
             $expiry = date('Y-m-d H:i:s', strtotime('+1 hour'));
             
             // 토큰 저장

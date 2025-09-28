@@ -30,7 +30,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </head>
 <body>
     <h1>LOGIN</h1>
-
+    <?php if (isset($_SESSION['message'])): ?>
+        <div style="color: green;"><?= $_SESSION['message'] ?></div>
+        <?php unset($_SESSION['message']); ?>
+    <?php endif; ?>
     <form method="POST">
         <p>
             username : <br>
