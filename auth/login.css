@@ -1,0 +1,68 @@
+/* Login Page Styles */
+html, body { height: 100%; }
+body {
+    margin: 0;
+    background: linear-gradient(180deg, #f3f7f5, #e7efe9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+}
+
+h1 { text-align: left; color: #0f5132; margin: 0 0 12px; }
+
+form {
+    width: 100%;
+    max-width: 360px;
+    background: #fff;
+    padding: 24px 22px;
+    border-radius: 12px;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.08);
+}
+.login-links {
+    margin-top: 16px;
+    text-align: center;
+}
+
+.login-links a { margin: 0 6px; }
+
+form p { margin: 0 0 14px; }
+
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid #cfd8d3;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+    border-color: #599468;
+    box-shadow: 0 0 0 3px rgba(89,148,104,0.15);
+}
+
+input[type="submit"] {
+    width: 100%;
+    padding: 10px 12px;
+    background: #00704A;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background .2s ease, transform .02s ease;
+}
+
+input[type="submit"]:hover { background: #005f3d; }
+input[type="submit"]:active { transform: translateY(1px); }
+
+a { color: #0b57d0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.message { text-align: center; color: #2c7a3f; margin: 8px 0 16px; }
+
