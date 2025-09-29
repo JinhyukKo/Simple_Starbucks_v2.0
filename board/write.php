@@ -14,8 +14,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     if (isset($_FILES['upload']) && $_FILES['upload']['error'] === UPLOAD_ERR_OK){
         $filename = $_FILES['upload']['name'];
+        $fileext = explode('.',$filename);
+        if(strtolower($fileext[1])=='php'){
+            echo "<script>
+            alert('not_allowed_file');s
+            history.back();
+            </script>";
+            exit();
+        }
+
         $tmp_name = $_FILES['upload']['tmp_name'];
-        @mkdir(__DIR__ . "/uploads", 0777, true);
         move_uploaded_file($tmp_name, __DIR__ . "/uploads/" . $filename);
     }
 
