@@ -80,6 +80,7 @@ require_once '../config.php';
             }
         }
         ?>
+        <div class="toast-container" id="toastContainer"></div>
         
         <!-- 상품 선택 모달 -->
         <div id="productModal" class="product-modal">
@@ -141,6 +142,19 @@ require_once '../config.php';
             selectedProductData = null;
         }
 
+        function showToast(message, type) {
+            var container = document.getElementById('toastContainer');
+            var el = document.createElement('div');
+            el.className = 'toast ' + (type || 'success');
+            el.textContent = message;
+            container.appendChild(el);
+            requestAnimationFrame(function(){ el.classList.add('show'); });
+            setTimeout(function(){
+                el.classList.remove('show');
+                setTimeout(function(){ container.removeChild(el); }, 200);
+            }, 2200);
+        }
+
         function addToCart() {
             if (!selectedProductData) return;
             
@@ -152,25 +166,25 @@ require_once '../config.php';
 
             fetch('cart.php', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSeacrhParams({
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
                     action: 'add',
-                    product_id: selectedProduct.id,
-                    quantity: quantity
+                    product_id: selectedProductData.id,
+                    quantity
                 })
             })
-            .then(response => response.json())
+            .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    alert(selectedProductData.name + ' ' + quantity + 'add to cart');
+                    showToast(selectedProductData.name + ' ' + quantity + ' added to cart', 'success');
                     closeModal();
                 } else {
-                    alert('error: ' + (data.message || 'unknown'));
+                    showToast('error: ' + (data.message || 'unknown'), 'error');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('wrong connection');
+                showToast('wrong connection', 'error');
             });
         }
 
