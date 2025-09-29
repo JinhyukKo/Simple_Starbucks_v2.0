@@ -28,15 +28,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <head>
     <title>LOGIN</title>
     <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/auth/login.css">
 
 </head>
 <body>
-    <h1>LOGIN</h1>
     <?php if (isset($_SESSION['message'])): ?>
-        <div style="color: green;"><?= $_SESSION['message'] ?></div>
+        <div class="message"><?= $_SESSION['message'] ?></div>
         <?php unset($_SESSION['message']); ?>
     <?php endif; ?>
     <form method="POST">
+        <h1>LOGIN</h1>
         <p>
             username : <br>
             <input type="text" name="username">
@@ -49,8 +50,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <input type="submit" value="Login">
         </p>
     </form>
-    <a href="reset_password.php">password reset</a>
-
-    <p><a href="register.php">register</a>
+    <div class="login-links">
+        <a href="reset_password.php">password reset</a>
+        <span> · </span>
+        <a href="register.php">register</a>
+    </div>
 </body>
 </html>
