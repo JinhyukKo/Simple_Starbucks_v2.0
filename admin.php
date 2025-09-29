@@ -368,5 +368,4 @@ $result = $stmt->fetchAll();
 </body>
 </html>
 <?php
-$pdo->close();
 ?>
