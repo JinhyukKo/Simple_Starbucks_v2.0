@@ -2,7 +2,7 @@
 CREATE DATABASE IF NOT EXISTS board_system;
 USE board_system;
 
-DROP TABLE IF EXISTS items;
+DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS cart;
 DROP TABLE IF EXISTS password_resets;
 DROP TABLE IF EXISTS messages;
@@ -59,7 +59,7 @@ CREATE TABLE password_resets (
 );
 
 -- 재고 관리 없음
-CREATE TABLE items(
+CREATE TABLE products(
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     description TEXT,
@@ -74,13 +74,13 @@ CREATE TABLE items(
 CREATE TABLE cart(
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    item_id INT NOT NULL,
+    product_id INT NOT NULL,
     quantity INT NOT NULL DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_user_item (user_id, item_id),
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_product (user_id, product_id),
     INDEX idx_user_id (user_id)
 );
 
@@ -102,7 +102,7 @@ VALUES
 (1, 2, 'comment written by admin.'),
 (2, 1, 'user comment');
 
-INSERT INTO items (name, description, price, category)
+INSERT INTO products (name, description, price, category)
 VALUES
 ('Americano', 'Classic Starbucks Americano', 4500, 'coffee'),
 ('Cafe Latte', 'Smooth blend of milk and espresso', 5000, 'coffee'),
