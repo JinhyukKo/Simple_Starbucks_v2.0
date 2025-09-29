@@ -19,7 +19,7 @@ CREATE TABLE users (
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     profile VARCHAR(255) DEFAULT NULL,
-    balance INT NOT NULL DEFAULT 50000,
+    balance INT NOT NULL DEFAULT 10000,
     role ENUM('user','admin') NOT NULL DEFAULT 'user',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -104,10 +104,11 @@ VALUES
 
 INSERT INTO items (name, description, price, category)
 VALUES
-('Americano', 'Classic Starbucks Americano', 450, 'coffee'),
-('Cafe Latte', 'Smooth blend of milk and espresso', 500, 'coffee'),
-('Caramel Macchiato', 'Sweet caramel with espresso', 550, 'coffee'),
-('Frappuccino', 'Refreshing blended beverage', 600, 'blended'),
-('Croissant', 'Crispy butter croissant', 300, 'bakery'),
-('Muffin', 'Sweet blueberry muffin', 350, 'bakery'),
-('gitf card', '5000', 5000, 'giftCard');
+('Americano', 'Classic Starbucks Americano', 4500, 'coffee'),
+('Cafe Latte', 'Smooth blend of milk and espresso', 5000, 'coffee'),
+('Caramel Macchiato', 'Sweet caramel with espresso', 5500, 'coffee'),
+('Frappuccino', 'Refreshing blended beverage', 6000, 'blended'),
+('Croissant', 'Crispy butter croissant', 3000, 'bakery'),
+('Muffin', 'Sweet blueberry muffin', 3500, 'bakery'),
+('gift card', '5000', 5000, 'giftCard'),
+('expensive gift', 'really expensive', 20000, 'giftCard');
