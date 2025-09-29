@@ -102,13 +102,13 @@ VALUES
 (1, 2, 'comment written by admin.'),
 (2, 1, 'user comment');
 
-INSERT INTO products (name, description, price, category)
+INSERT INTO products (name, description, price, category, image_url)
 VALUES
-('Americano', 'Classic Starbucks Americano', 4500, 'coffee'),
-('Cafe Latte', 'Smooth blend of milk and espresso', 5000, 'coffee'),
-('Caramel Macchiato', 'Sweet caramel with espresso', 5500, 'coffee'),
-('Frappuccino', 'Refreshing blended beverage', 6000, 'blended'),
-('Croissant', 'Crispy butter croissant', 3000, 'bakery'),
-('Muffin', 'Sweet blueberry muffin', 3500, 'bakery'),
-('gift card', '5000', 5000, 'giftCard'),
-('expensive gift', 'really expensive', 20000, 'giftCard');
+('Americano', 'Classic Starbucks Americano', 4500, 'coffee', '../assets/images/americano.jpg'),
+('Cafe Latte', 'Smooth blend of milk and espresso', 5000, 'coffee', '../assets/images/latte.jpg'),
+('Caramel Macchiato', 'Sweet caramel with espresso', 5500, 'coffee', '../assets/images/macchiato.jpg'),
+('Frappuccino', 'Refreshing blended beverage', 6000, 'coffee', '../assets/images/frappuccino.jpg'),
+('Croissant', 'Crispy butter croissant', 3000, 'bakery', '../assets/images/croissant.jpg'),
+('Muffin', 'Sweet blueberry muffin', 3500, 'bakery', '../assets/images/muffin.jpg'),
+('Gift Card', 'Premium Starbucks Gift Card', 5000, 'giftCard', '../assets/images/giftcard.jpg'),
+('Expensive Gift', 'Really expensive premium gift', 20000, 'giftCard', '../assets/images/giftcard.jpg');
