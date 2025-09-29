@@ -2,22 +2,67 @@
 include '../auth/login_required.php';
 require_once '../config.php';
 
-$userId = $_SESSION['user_id'];
+if (!function_exists('html_escape')) {
+    function html_escape($value)
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+}
+
+if (!defined('MAX_CART_QUANTITY')) {
+    define('MAX_CART_QUANTITY', 99);
+}
+
+function normalizeQuantity($value): int
+{
+    $quantity = filter_var(
+        $value,
+        FILTER_VALIDATE_INT,
+        [
+            'options' => [
+                'min_range' => 1,
+                'max_range' => MAX_CART_QUANTITY,
+            ],
+        ]
+    );
+
+    if ($quantity === false) {
+        throw new InvalidArgumentException('Quantity must be an integer between 1 and ' . MAX_CART_QUANTITY . '.');
+    }
+
+    return $quantity;
+}
+
+$userId = (int) $_SESSION['user_id'];
 $messages = [];
 
-function fetchCart(PDO $pdo, $userId) {
-    $sql = "SELECT c.id AS cart_id, c.product_id, c.quantity, p.name, p.price, p.image_url FROM cart c LEFT JOIN products p ON p.id = c.product_id WHERE c.user_id = $userId ORDER BY c.id DESC";
-    $stmt = $pdo->query($sql);
-    $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+$csrfToken = $_SESSION['csrf_token'];
 
-    $total = 0;
+function fetchCart(PDO $pdo, int $userId): array
+{
+    $stmt = $pdo->prepare(
+        'SELECT c.id AS cart_id, c.product_id, c.quantity, p.name, p.price, p.image_url
+         FROM cart c
+         LEFT JOIN products p ON p.id = c.product_id
+         WHERE c.user_id = :user_id
+         ORDER BY c.id DESC'
+    );
+    $stmt->execute([':user_id' => $userId]);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+    $total = 0.0;
     $count = 0;
 
     foreach ($rows as &$row) {
-        $price = isset($row['price']) ? $row['price'] : 0;
-        $row['subtotal'] = $price * $row['quantity'];
+        $price = isset($row['price']) ? (float) $row['price'] : 0.0;
+        $quantity = isset($row['quantity']) ? (int) $row['quantity'] : 0;
+        $row['quantity'] = $quantity;
+        $row['subtotal'] = $price * $quantity;
         $total += $row['subtotal'];
-        $count += $row['quantity'];
+        $count += $quantity;
     }
 
     return [
@@ -27,20 +72,57 @@ function fetchCart(PDO $pdo, $userId) {
     ];
 }
 
-function upsertCartItem(PDO $pdo, $userId, $productId, $qty) {
-    // 취약: 검증 없이 수량을 그대로 사용하고 문자열 결합으로 쿼리 생성
-    $checkSql = "SELECT quantity FROM cart WHERE user_id = $userId AND product_id = $productId";
-    $existing = $pdo->query($checkSql);
-    $row = $existing ? $existing->fetch(PDO::FETCH_ASSOC) : null;
-
-    if ($row) {
-        $newQty = $row['quantity'] + $qty;
-        $pdo->exec("UPDATE cart SET quantity = $newQty WHERE user_id = $userId AND product_id = $productId");
-        return 'Quantity updated (simply summed on the server).';
+function upsertCartItem(PDO $pdo, int $userId, int $productId, $qty): string
+{
+    if ($productId <= 0) {
+        throw new InvalidArgumentException('Invalid product selection.');
     }
 
-    $pdo->exec("INSERT INTO cart (user_id, product_id, quantity) VALUES ($userId, $productId, $qty)");
-    return 'Item added to cart without validation.';
+    $quantity = normalizeQuantity($qty);
+
+    $productStmt = $pdo->prepare('SELECT id FROM products WHERE id = :product_id');
+    $productStmt->execute([':product_id' => $productId]);
+    if (!$productStmt->fetchColumn()) {
+        throw new InvalidArgumentException('The requested product does not exist.');
+    }
+
+    $checkStmt = $pdo->prepare('SELECT quantity FROM cart WHERE user_id = :user_id AND product_id = :product_id');
+    $checkStmt->execute([
+        ':user_id' => $userId,
+        ':product_id' => $productId,
+    ]);
+    $row = $checkStmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($row) {
+        $existing = (int) $row['quantity'];
+        $newQty = $existing + $quantity;
+        if ($newQty > MAX_CART_QUANTITY) {
+            $newQty = MAX_CART_QUANTITY;
+        }
+        $updateStmt = $pdo->prepare(
+            'UPDATE cart SET quantity = :quantity WHERE user_id = :user_id AND product_id = :product_id'
+        );
+        $updateStmt->execute([
+            ':quantity' => $newQty,
+            ':user_id' => $userId,
+            ':product_id' => $productId,
+        ]);
+
+        return $newQty === $existing
+            ? 'Quantity already at maximum allowed.'
+            : 'Quantity updated.';
+    }
+
+    $insertStmt = $pdo->prepare(
+        'INSERT INTO cart (user_id, product_id, quantity) VALUES (:user_id, :product_id, :quantity)'
+    );
+    $insertStmt->execute([
+        ':user_id' => $userId,
+        ':product_id' => $productId,
+        ':quantity' => $quantity,
+    ]);
+
+    return 'Item added to cart.';
 }
 
 $isJson = isset($_SERVER['CONTENT_TYPE']) && stripos($_SERVER['CONTENT_TYPE'], 'application/json') !== false;
@@ -48,15 +130,24 @@ $isJson = isset($_SERVER['CONTENT_TYPE']) && stripos($_SERVER['CONTENT_TYPE'], '
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($isJson) {
         $payload = json_decode(file_get_contents('php://input'), true);
+
+        if (!is_array($payload)) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Invalid JSON payload.']);
+            exit;
+        }
+
         $action = $payload['action'] ?? null;
-        $productId = isset($payload['product_id']) ? (int) $payload['product_id'] : 0;
-        $quantity = isset($payload['quantity']) ? (int) $payload['quantity'] : 1;
+        $productId = isset($payload['product_id'])
+            ? filter_var($payload['product_id'], FILTER_VALIDATE_INT)
+            : 0;
+        $quantityParam = $payload['quantity'] ?? null;
 
         $response = ['success' => false, 'message' => 'Unsupported action'];
 
-        if ($action === 'add' && $productId > 0 && $quantity > 0) {
+        if ($action === 'add' && $productId) {
             try {
-                $response['message'] = upsertCartItem($pdo, $userId, $productId, $quantity);
+                $response['message'] = upsertCartItem($pdo, $userId, $productId, $quantityParam);
                 $response['success'] = true;
             } catch (Throwable $e) {
                 $response['message'] = $e->getMessage();
@@ -68,31 +159,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    $submittedToken = $_POST['csrf_token'] ?? '';
+    if (!hash_equals($csrfToken, $submittedToken)) {
+        http_response_code(400);
+        exit('Invalid request token provided.');
+    }
+
     $action = $_POST['action'] ?? '';
 
     if ($action === 'update') {
-        $cartId = $_POST['cart_id'] ?? 0;
-        $quantity = $_POST['quantity'] ?? 1;
+        $cartId = filter_input(INPUT_POST, 'cart_id', FILTER_VALIDATE_INT) ?: 0;
         try {
-            $pdo->exec("UPDATE cart SET quantity = $quantity WHERE id = $cartId AND user_id = $userId");
-            $messages[] = 'Quantity updated without further checks.';
-        } catch (Throwable $e) {
+            $quantity = normalizeQuantity($_POST['quantity'] ?? null);
+            $updateStmt = $pdo->prepare(
+                'UPDATE cart SET quantity = :quantity WHERE id = :cart_id AND user_id = :user_id'
+            );
+            $updateStmt->execute([
+                ':quantity' => $quantity,
+                ':cart_id' => $cartId,
+                ':user_id' => $userId,
+            ]);
+
+            $messages[] = $updateStmt->rowCount() ? 'Quantity updated.' : 'No matching cart item found.';
+        } catch (InvalidArgumentException $e) {
             $messages[] = 'Update failed: ' . $e->getMessage();
+        } catch (Throwable $e) {
+            $messages[] = 'Update failed: An unexpected error occurred.';
         }
     } elseif ($action === 'remove') {
-        $cartId = $_POST['cart_id'] ?? 0;
+        $cartId = filter_input(INPUT_POST, 'cart_id', FILTER_VALIDATE_INT) ?: 0;
         try {
-            $pdo->exec("DELETE FROM cart WHERE id = $cartId AND user_id = $userId");
-            $messages[] = 'Item removed.';
+            $deleteStmt = $pdo->prepare('DELETE FROM cart WHERE id = :cart_id AND user_id = :user_id');
+            $deleteStmt->execute([
+                ':cart_id' => $cartId,
+                ':user_id' => $userId,
+            ]);
+            $messages[] = $deleteStmt->rowCount() ? 'Item removed.' : 'No matching cart item found.';
         } catch (Throwable $e) {
-            $messages[] = 'Delete failed: ' . $e->getMessage();
+            $messages[] = 'Delete failed: An unexpected error occurred.';
         }
     } elseif ($action === 'clear') {
         try {
-            $pdo->exec("DELETE FROM cart WHERE user_id = $userId");
-            $messages[] = 'Cart cleared.';
+            $clearStmt = $pdo->prepare('DELETE FROM cart WHERE user_id = :user_id');
+            $clearStmt->execute([':user_id' => $userId]);
+            $messages[] = $clearStmt->rowCount() ? 'Cart cleared.' : 'Cart already empty.';
         } catch (Throwable $e) {
-            $messages[] = 'Clear failed: ' . $e->getMessage();
+            $messages[] = 'Clear failed: An unexpected error occurred.';
         }
     }
 }
@@ -145,7 +257,7 @@ $cart = fetchCart($pdo, $userId);
     </div>
 
     <?php foreach ($messages as $message): ?>
-        <div class="flash-box"><?= $message ?></div>
+        <div class="flash-box"><?= html_escape($message) ?></div>
     <?php endforeach; ?>
 
     <?php if (!$cart['items']): ?>
@@ -156,27 +268,35 @@ $cart = fetchCart($pdo, $userId);
     <?php else: ?>
         <div class="cart-items">
             <?php foreach ($cart['items'] as $item): ?>
-                <?php $imagePath = $item['image_url'] ?: '/assets/images/americano.jpg'; ?>
+                <?php
+                    $imagePathRaw = $item['image_url'] ?? '';
+                    $imagePath = '/assets/images/americano.jpg';
+                    if (is_string($imagePathRaw) && $imagePathRaw !== '' && strpos($imagePathRaw, '/') === 0) {
+                        $imagePath = $imagePathRaw;
+                    }
+                ?>
                 <div class="cart-card">
-                    <img src="<?= $imagePath ?>" alt="<?= $item['name'] ?>">
+                    <img src="<?= html_escape($imagePath) ?>" alt="<?= html_escape($item['name'] ?? 'Product image') ?>">
                     <div class="cart-info">
-                        <h3><?= $item['name'] ?></h3>
+                        <h3><?= html_escape($item['name'] ?? 'Unnamed product') ?></h3>
                         <div class="cart-meta">
-                            <div>Unit price: ₩<?= number_format($item['price']) ?></div>
-                            <div>Subtotal: ₩<?= number_format($item['subtotal']) ?></div>
+                            <div>Unit price: ₩<?= number_format((float) $item['price']) ?></div>
+                            <div>Subtotal: ₩<?= number_format((float) $item['subtotal']) ?></div>
                         </div>
                         <div class="cart-actions">
                             <form method="post">
                                 <input type="hidden" name="action" value="update">
-                                <input type="hidden" name="cart_id" value="<?= $item['cart_id'] ?>">
+                                <input type="hidden" name="cart_id" value="<?= (int) $item['cart_id'] ?>">
+                                <input type="hidden" name="csrf_token" value="<?= html_escape($csrfToken) ?>">
                                 <label>Qty
-                                    <input type="number" name="quantity" value="<?= $item['quantity'] ?>" min="1">
+                                    <input type="number" name="quantity" value="<?= (int) $item['quantity'] ?>" min="1" max="<?= MAX_CART_QUANTITY ?>">
                                 </label>
                                 <button type="submit" class="btn-secondary">Update</button>
                             </form>
                             <form method="post">
                                 <input type="hidden" name="action" value="remove">
-                                <input type="hidden" name="cart_id" value="<?= $item['cart_id'] ?>">
+                                <input type="hidden" name="cart_id" value="<?= (int) $item['cart_id'] ?>">
+                                <input type="hidden" name="csrf_token" value="<?= html_escape($csrfToken) ?>">
                                 <button type="submit" class="btn-danger">Remove</button>
                             </form>
                         </div>
@@ -187,12 +307,13 @@ $cart = fetchCart($pdo, $userId);
 
         <div class="cart-summary">
             <div>
-                <div><strong>Total items:</strong> <?= $cart['count'] ?></div>
-                <div><strong>Total amount:</strong> ₩<?= number_format($cart['total']) ?></div>
+                <div><strong>Total items:</strong> <?= (int) $cart['count'] ?></div>
+                <div><strong>Total amount:</strong> ₩<?= number_format((float) $cart['total']) ?></div>
             </div>
             <div class="cart-buttons">
                 <form method="post">
                     <input type="hidden" name="action" value="clear">
+                    <input type="hidden" name="csrf_token" value="<?= html_escape($csrfToken) ?>">
                     <button type="submit" class="btn-secondary">Clear cart</button>
                 </form>
                 <form method="get" action="/commerce/payment.php">
