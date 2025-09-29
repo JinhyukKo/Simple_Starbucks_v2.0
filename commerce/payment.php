@@ -16,7 +16,7 @@ function fetchUserBalance(PDO $pdo, $userId) {
 
 // 장바구니도 동일하게 취약한 방식으로 읽어 옵니다.
 function loadCart(PDO $pdo, $userId) {
-    $sql = "SELECT c.id AS cart_id, c.quantity, p.id AS product_id, p.name, p.price FROM cart c INNER JOIN products p ON p.id = c.product_id WHERE c.user_id = $userId";
+    $sql = "SELECT c.id AS cart_id, c.quantity, p.id AS product_id, p.name, p.price, p.image_url FROM cart c INNER JOIN products p ON p.id = c.product_id WHERE c.user_id = $userId";
     $stmt = $pdo->query($sql);
     $items = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
@@ -108,14 +108,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <title>Vulnerable Payment Page</title>
     <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/commerce/store.css">
+    <style>
+        .payment-wrapper { max-width: 960px; margin: 0 auto; padding: 24px; }
+        .payment-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .payment-grid { display: flex; flex-direction: column; gap: 16px; }
+        .payment-card { display: flex; gap: 16px; border: 1px solid #ddd; border-radius: 12px; padding: 16px; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .payment-card img { width: 100px; height: 100px; object-fit: cover; border-radius: 8px; }
+        .payment-info { flex: 1; }
+        .payment-info h3 { margin: 0 0 8px; font-size: 18px; }
+        .payment-meta { color: #555; margin-bottom: 8px; }
+        .payment-summary { margin-top: 24px; padding: 20px; border-radius: 12px; background: #f7f7f7; display: flex; justify-content: space-between; align-items: center; }
+        .btn-primary { background: #00704A; color: #fff; padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; }
+        .btn-secondary { background: #f1f1f1; color: #333; padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; }
+        @media (max-width: 680px) {
+            .payment-card { flex-direction: column; align-items: center; text-align: center; }
+            .payment-summary { flex-direction: column; gap: 16px; }
+        }
+    </style>
 </head>
 <body>
 <?php include '../header.php'; ?>
 
-<h1>Vulnerable Payment Demo</h1>
-<p>Current user ID: <?= $activeUserId ?> / Remaining points: <?= $balance ?></p>
-<p style="color: #a00;">* This page is intentionally vulnerable for penetration testing practice.</p>
-
+<div class="payment-wrapper">
+    <div class="payment-header">
+        <h1>Checkout</h1>
+        <div>
+            <button class="btn-secondary" onclick="location.href='/commerce/cart.php'">Back to cart</button>
+        </div>
+    </div>
+    <p>Current user ID: <?= $activeUserId ?> / Remaining points: <?= $balance ?></p>
 <?php if ($errors): ?>
     <div style="color:red;">
         <?php foreach ($errors as $error): ?>
@@ -135,46 +157,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php if (!$cart['items']): ?>
         <p>The cart is empty.</p>
     <?php else: ?>
-        <table border="1" cellpadding="8" cellspacing="0">
-            <thead>
-                <tr>
-                    <th>Item</th>
-                    <th>Quantity</th>
-                    <th>Unit Price</th>
-                    <th>Subtotal</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($cart['items'] as $item): ?>
-                    <tr>
-                        <td><?= $item['name'] ?></td>
-                        <td><?= $item['quantity'] ?></td>
-                        <td><?= $item['price'] ?></td>
-                        <td><?= $item['subtotal'] ?></td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-            <tfoot>
-                <tr>
-                    <td colspan="3" style="text-align:right;">Total amount</td>
-                    <td><?= $cart['total'] ?></td>
-                </tr>
-            </tfoot>
-        </table>
+        <div class="payment-grid">
+            <?php foreach ($cart['items'] as $item): ?>
+                <?php $imagePath = $item['image_url'] ?: '/assets/images/americano.jpg'; ?>
+                <div class="payment-card">
+                    <img src="<?= $imagePath ?>" alt="<?= $item['name'] ?>">
+                    <div class="payment-info">
+                        <h3><?= $item['name'] ?></h3>
+                        <div class="payment-meta">
+                            <div>Quantity: <?= $item['quantity'] ?></div>
+                            <div>Unit price: ₩<?= number_format($item['price']) ?></div>
+                        </div>
+                        <div><strong>Subtotal:</strong> ₩<?= number_format($item['subtotal']) ?></div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
 
-        <form method="post" style="margin-top:16px;">
-            <!-- hidden 필드는 클라이언트가 자유롭게 변조 가능하므로 취약함 -->
-            <input type="hidden" name="total" value="<?= $cart['total'] ?>">
-            <input type="hidden" name="count" value="<?= $cart['count'] ?>">
-            <input type="hidden" name="details" value="<?= summarizeCartItems($cart['items']) ?>">
-            <button type="submit">Pay with points (no validation)</button>
-        </form>
+        <div class="payment-summary">
+            <div>
+                <div><strong>Total quantity:</strong> <?= $cart['count'] ?></div>
+                <div><strong>Total amount:</strong> ₩<?= number_format($cart['total']) ?></div>
+            </div>
+            <form method="post">
+                <!-- hidden 필드는 클라이언트가 자유롭게 변조 가능하므로 취약함 -->
+                <input type="hidden" name="total" value="<?= $cart['total'] ?>">
+                <input type="hidden" name="count" value="<?= $cart['count'] ?>">
+                <input type="hidden" name="details" value="<?= summarizeCartItems($cart['items']) ?>">
+                <button type="submit" class="btn-primary">Pay with points (no validation)</button>
+            </form>
+        </div>
     <?php endif; ?>
 </section>
 
 <?php if ($purchaseReceipt): ?>
     <section style="margin-top:32px;">
-        <h2>Receipt (shows tampered values)</h2>
+        <h2>Receipt</h2>
         <p>Total quantity: <?= $purchaseReceipt['count'] ?></p>
         <p>Total amount: <?= $purchaseReceipt['total'] ?></p>
         <p>Details: <?= $purchaseReceipt['details'] ?></p>
@@ -182,9 +200,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </section>
 <?php endif; ?>
 
-<section style="margin-top:32px;">
-    <a href="/commerce/store.php">Back to store</a>
-</section>
-
+    <section style="margin-top:32px;">
+        <a href="/commerce/store.php">Back to store</a>
+    </section>
+</div>
 </body>
 </html>
