@@ -69,20 +69,7 @@ $preserveQs = http_build_query([
 <head>
   <meta charset="utf-8">
   <title>Board</title>
-  <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
-    form.search { margin: 16px 0; display: flex; gap: 8px; flex-wrap: wrap; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ddd; padding: 8px; }
-    thead th { background: #f7f7f7; }
-    .muted { color:#666; }
-    input[type="text"] { padding: 6px 8px; width: 260px; }
-    select { padding: 6px 8px; }
-    button { padding: 6px 12px; cursor: pointer; }
-    .no-results { color: #999; font-style: italic; margin: 20px 0; }
-    a { text-decoration: none; color: #0066cc; }
-    a:hover { text-decoration: underline; }
-  </style>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <h1>Board</h1>

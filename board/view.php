@@ -91,12 +91,7 @@ $comments = $pdo->query("
     <meta charset="utf-8">
     <!-- XSS 취약점: htmlspecialchars 제거 -->
     <title><?= $post['title'] ?></title>
-    <style>
-      .comment { border-top:1px solid #eee; padding:8px 0; }
-      .comment .meta { color:#666; font-size:12px; }
-      .comment-actions { margin-left:8px; display:inline-block; }
-      textarea { width:100%; max-width:700px; }
-    </style>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
     <!-- XSS 취약점: htmlspecialchars 제거 -->

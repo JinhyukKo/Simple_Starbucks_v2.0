@@ -27,6 +27,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <html>
 <head>
     <title>LOGIN</title>
+    <link rel="stylesheet" href="/style.css">
+
 </head>
 <body>
     <h1>LOGIN</h1>
@@ -44,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <input type="password" name="password">
         </p>
         <p>
-            <input type="submit" value="로그인">
+            <input type="submit" value="Login">
         </p>
     </form>
     <a href="reset_password.php">password reset</a>

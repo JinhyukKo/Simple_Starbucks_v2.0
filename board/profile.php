@@ -12,7 +12,11 @@
 
 <!DOCTYPE html>
 <html>
+    <head>
+        <link rel="stylesheet" href="/style.css">
 
+    </head>
+        <a href="../index.php">Main</a>
     <div>
         <?php if($profile['profile']): ?>
             <img src="profile/<?=$profile['profile']; ?>" alt="<?=$profile['profile'];?>">
@@ -21,12 +25,12 @@
         <?php endif; ?>
     </div>
     <div>
-        <p>name:<?php echo $profile['username']; ?></p>
+        <p>name : <?php echo $profile['username']; ?></p>
     </div>
     <div>
-        <p>email:<?php echo $profile['email']; ?></p>
+        <p>email : <?php echo $profile['email']; ?></p>
     </div>
-    <a href="profile_modify.php">수정</a>
-    <a href="board.php">메인</a>
+    <a href="profile_modify.php">Edit</a>
+    <a href="/auth/reset_password.php">Reset Password</a>
 
 </html>
