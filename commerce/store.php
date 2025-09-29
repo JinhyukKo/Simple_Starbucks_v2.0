@@ -44,9 +44,7 @@ require_once '../config.php';
                     echo "<div class='product-grid'>";
                     
                     foreach ($products as $product) {
-                        $image_path = isset($product['image_url']) && !empty($product['image_url']) 
-                            ? $product['image_url'] 
-                            : '../assets/images/americano.jpg';
+                        $image_path = $product['image_url'];
                         
                         echo "<div class='product-card'"
                             . " data-id='" . (int)$product['id'] . "'"
@@ -152,19 +150,14 @@ require_once '../config.php';
                 return;
             }
 
-            // 장바구니에 추가하는 로직 (향후 구현될 cart.php와 연동)
-            const cartData = {
-                action: 'add',
-                product_id: selectedProductData.id,
-                quantity: quantity
-            };
-
             fetch('cart.php', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(cartData)
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSeacrhParams({
+                    action: 'add',
+                    product_id: selectedProduct.id,
+                    quantity: quantity
+                })
             })
             .then(response => response.json())
             .then(data => {
@@ -177,7 +170,7 @@ require_once '../config.php';
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('error');
+                alert('wrong connection');
             });
         }
 
