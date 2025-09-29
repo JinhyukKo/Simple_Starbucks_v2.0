@@ -11,9 +11,12 @@
     if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         $user_id=$profile['id'];
-        $username=$_POST['username'];
         $email=$_POST['email'];
-        $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+        if(!empty($_POST['password'])){
+            $password = password_hash($_POST['password'], PASSWORD_DEFAULT);   
+        }else{
+            $password=$profile['password'];
+        }
         $filename = '';
 
         if (isset($_FILES['upload']) && $_FILES['upload']['error'] === UPLOAD_ERR_OK){
@@ -23,7 +26,7 @@
         }
 
         
-        $sql = "UPDATE users SET username='$username', email='$email',password='$password', profile = '$filename' WHERE id = '$user_id' ";
+        $sql = "UPDATE users SET email='$email',password='$password', profile = '$filename' WHERE id = '$user_id' ";
 
         $pdo->query($sql);
 
@@ -47,7 +50,7 @@
         <?php endif; ?>
     </div>
     <div>
-        <p>name:<input type="text" name="username" value="<?php echo $profile['username']; ?>"></p>
+        <p>name:<?php echo $profile['username']; ?></p>
     </div>
     <div>
         <p>email:<input type="text" name="email" value="<?php echo $profile['email']; ?>"></p>
