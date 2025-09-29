@@ -1,5 +1,6 @@
 <?php
 require 'config.php';
+require '/auth/login_required';
 
 
 // 상품 추가 처리
