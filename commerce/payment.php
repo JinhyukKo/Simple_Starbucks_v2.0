@@ -16,7 +16,7 @@ function fetchUserBalance(PDO $pdo, $userId) {
 
 // 장바구니도 동일하게 취약한 방식으로 읽어 옵니다.
 function loadCart(PDO $pdo, $userId) {
-    $sql = "SELECT c.id AS cart_id, c.quantity, i.id AS item_id, i.name, i.price FROM cart c INNER JOIN items i ON i.id = c.item_id WHERE c.user_id = $userId";
+    $sql = "SELECT c.id AS cart_id, c.quantity, p.id AS product_id, p.name, p.price FROM cart c INNER JOIN products p ON p.id = c.product_id WHERE c.user_id = $userId";
     $stmt = $pdo->query($sql);
     $items = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
