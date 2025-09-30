@@ -2,15 +2,15 @@
 CREATE DATABASE IF NOT EXISTS board_system;
 USE board_system;
 
+DROP TABLE IF EXISTS products;
+DROP TABLE IF EXISTS cart;
 DROP TABLE IF EXISTS password_resets;
 DROP TABLE IF EXISTS messages;
 DROP TABLE IF EXISTS comments;
 DROP TABLE IF EXISTS files;
 DROP TABLE IF EXISTS posts;
-DROP TABLE IF EXISTS users; 
-
-
-
+DROP TABLE IF EXISTS users;
+ 
 
 -- 사용자 테이블
 CREATE TABLE users (
@@ -19,6 +19,7 @@ CREATE TABLE users (
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     profile VARCHAR(255) DEFAULT NULL,
+    balance INT NOT NULL DEFAULT 10000,
     role ENUM('user','admin') NOT NULL DEFAULT 'user',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -46,24 +47,6 @@ CREATE TABLE comments (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- 쪽지 테이블
-CREATE TABLE messages (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    sender_id INT NOT NULL,
-    receiver_id INT NOT NULL,
-    subject VARCHAR(200) NOT NULL,
-    content TEXT NOT NULL,
-    is_read BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    read_at TIMESTAMP NULL DEFAULT NULL,
-    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE,
-    INDEX idx_receiver_unread (receiver_id, is_read),
-    INDEX idx_sender (sender_id),
-    INDEX idx_created_at (created_at)
-);
-
--- subject : 쪽지제목, isRead : 읽음 여부, read_at : 쪽지 읽은 시간
 
 -- 비밀번호 초기화
 CREATE TABLE password_resets (
@@ -75,6 +58,31 @@ CREATE TABLE password_resets (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- 재고 관리 없음
+CREATE TABLE products(
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    price INT NOT NULL,
+    category VARCHAR(50),
+    image_url VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- 장바구니
+CREATE TABLE cart(
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_product (user_id, product_id),
+    INDEX idx_user_id (user_id)
+);
 
 INSERT INTO users (username, email, password, role)
 VALUES
@@ -85,11 +93,22 @@ VALUES
 -- posts 더미 데이터 2개
 INSERT INTO posts (title, content, user_id, filename,role)
 VALUES
-('첫 번째 게시글', '이것은 첫 번째 게시글 내용입니다.', 1, 'file1.txt','user'),
-('관리자 게시글', '관리자가 작성한 게시글 내용입니다.', 2, 'file2.txt','admin');
+('first post', 'first post.', 1, 'file1.txt','user'),
+('written by admin', 'admin post.', 2, 'file2.txt','admin');
 
 INSERT INTO comments (post_id, user_id, content)
 VALUES
-(1, 1, '첫 번째 게시글에 대한 댓글입니다.'),
-(1, 2, '관리자의 댓글입니다.'),
-(2, 1, '관리자 게시글에 대한 일반 사용자 댓글입니다.');
+(1, 1, 'first comment.'),
+(1, 2, 'comment written by admin.'),
+(2, 1, 'user comment');
+
+INSERT INTO products (name, description, price, category, image_url)
+VALUES
+('Americano', 'Classic Starbucks Americano', 4500, 'coffee', '../assets/images/americano.jpg'),
+('Cafe Latte', 'Smooth blend of milk and espresso', 5000, 'coffee', '../assets/images/latte.jpg'),
+('Caramel Macchiato', 'Sweet caramel with espresso', 5500, 'coffee', '../assets/images/macchiato.jpg'),
+('Frappuccino', 'Refreshing blended beverage', 6000, 'coffee', '../assets/images/frappuccino.jpg'),
+('Croissant', 'Crispy butter croissant', 3000, 'bakery', '../assets/images/croissant.jpg'),
+('Muffin', 'Sweet blueberry muffin', 3500, 'bakery', '../assets/images/muffin.jpg'),
+('Gift Card', 'Premium Starbucks Gift Card', 5000, 'giftCard', '../assets/images/giftcard.jpg'),
+('Expensive Gift', 'Really expensive premium gift', 20000, 'giftCard', '../assets/images/giftcard.jpg');

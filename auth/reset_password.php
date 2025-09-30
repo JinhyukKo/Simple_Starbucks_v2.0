@@ -49,6 +49,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html>
 <head>
     <title>Reset Password</title>
+    <link rel="stylesheet" href="/style.css">
+
 </head>
 <body>
     <h2>Reset Password</h2>

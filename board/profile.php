@@ -1,5 +1,3 @@
-#! incomplete
-
 <?php
     include '../auth/login_required.php';
     require_once '../config.php';
@@ -9,44 +7,30 @@
     $sql = "SELECT * FROM users WHERE username='$username'";
     $result = $pdo->query($sql);
     $profile = $result->fetch();
-
-    if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-        $user_id = $profile['id'];
-        $filename = '';
-
-        if (isset($_FILES['upload']) && $_FILES['upload']['error'] === UPLOAD_ERR_OK){
-            $filename = $_FILES['upload']['name'];
-            $tmp_name = $_FILES['upload']['tmp_name'];
-            move_uploaded_file($tmp_name, "profile/" . $filename);
-        }
-
-        $sql = "UPDATE users SET filename = '$filename' WHERE id = '$user_id' ";
-
-        $pdo->query($sql);
-
-        header("Location: profile.php");
-        exit();
-    }
 ?>
 
 
 <!DOCTYPE html>
 <html>
-<form method="POST" enctype="multipart/form-data">
+    <head>
+        <link rel="stylesheet" href="/style.css">
+
+    </head>
+        <a href="../index.php">Main</a>
     <div>
-        <?php if($profile['filename']): ?>
-            <img src="profile/<?=$profile['filename']; ?>" alt="<?=$profile['filename'];?>">
-            <input type="file" name="filename">
+        <?php if($profile['profile']): ?>
+            <img src="profile/<?=$profile['profile']; ?>" alt="<?=$profile['profile'];?>">
+        <?php else: ?>
+            <img src="" alt="no image">
         <?php endif; ?>
-        <input type="file" name="upload">
     </div>
     <div>
-        <p>name:<?php echo $profile['username']; ?></p>
+        <p>name : <?php echo $profile['username']; ?></p>
     </div>
     <div>
-        <p>email:<?php echo $profile['email']; ?></p>
+        <p>email : <?php echo $profile['email']; ?></p>
     </div>
-    <input type="submit" value="수정">
-</form>
+    <a href="profile_modify.php">Edit</a>
+    <a href="/auth/reset_password.php">Reset Password</a>
 
 </html>

@@ -2,14 +2,21 @@
 include '../auth/login_required.php';
 require_once '../config.php';
 include '../header.php';
-$post_id = (int)($_GET['id'] ?? 0);
 
-// 작성글 + 작성자 role 함께 조회 (비밀글/권한 확인용)
+if (!function_exists('html_escape')) {
+    function html_escape($value)
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+}
+
+$post_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+
 $sql = "SELECT p.*, u.username, u.role AS author_role
         FROM posts p JOIN users u ON p.user_id = u.id
         WHERE p.id = $post_id";
 $result = $pdo->query($sql);
-$post = $result->fetch();
+$post = $result ? $result->fetch() : false;
 
 if (!$post) {
     http_response_code(404);
@@ -84,32 +91,35 @@ $comments = $pdo->query("
     WHERE c.post_id = $post_id
     ORDER BY c.created_at ASC
 ")->fetchAll();
+
+$safeTitle = html_escape($post['title']);
+$safeAuthor = html_escape($post['username']);
+$safeCreatedAt = html_escape($post['created_at']);
+$contentHtml = nl2br(html_escape($post['content']));
+
+$hasAttachment = !empty($post['filename']);
+if ($hasAttachment) {
+    $downloadName = basename($post['filename']);
+    $downloadUrl = 'uploads/' . rawurlencode($downloadName);
+}
 ?>
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
-    <!-- XSS 취약점: htmlspecialchars 제거 -->
-    <title><?= $post['title'] ?></title>
-    <style>
-      .comment { border-top:1px solid #eee; padding:8px 0; }
-      .comment .meta { color:#666; font-size:12px; }
-      .comment-actions { margin-left:8px; display:inline-block; }
-      textarea { width:100%; max-width:700px; }
-    </style>
+    <title><?= $safeTitle ?></title>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <!-- XSS 취약점: htmlspecialchars 제거 -->
-    <h1><?= $post['title'] ?></h1>
+    <h1><?= $safeTitle ?></h1>
 
     <p>
         <a href="../index.php">main</a> |
         <a href="board.php">borad</a>
     </p>
 
-    <!-- XSS 취약점: htmlspecialchars 제거 -->
-    <p>작성자: <?= $post['username'] ?>
-       | 작성일: <?= $post['created_at'] ?>
+    <p>작성자: <?= $safeAuthor ?>
+       | 작성일: <?= $safeCreatedAt ?>
        <?php if ($isSecret): ?>
          | <strong>🔒 비밀글</strong>
          <?php if ($isAuthorAdmin): ?>
@@ -119,14 +129,12 @@ $comments = $pdo->query("
     </p>
 
     <div>
-        <!-- XSS 취약점: htmlspecialchars와 nl2br 제거, HTML/스크립트 실행 가능 -->
-        <?= $post['content'] ?>
+        <?= $contentHtml ?>
     </div>
 
-    <?php if($post['filename']): ?>
-        <!-- XSS 취약점: htmlspecialchars 제거 -->
-        <p><a href="uploads/<?= $post['filename']?>" download>
-            <?= $post['filename']?>
+    <?php if ($hasAttachment): ?>
+        <p><a href="<?= html_escape($downloadUrl) ?>" download>
+            <?= html_escape($downloadName) ?>
         </a></p>
     <?php endif; ?>
 
@@ -146,13 +154,11 @@ $comments = $pdo->query("
       <?php foreach ($comments as $c): ?>
         <div class="comment">
           <div class="meta">
-            <!-- XSS 취약점: htmlspecialchars 제거 -->
-            <?= $c['username'] ?>
-            (<?= $c['created_at'] ?>)
+            <?= html_escape($c['username']) ?>
+            (<?= html_escape($c['created_at']) ?>)
           </div>
           <div class="body">
-            <!-- XSS 취약점: htmlspecialchars와 nl2br 제거, HTML/스크립트 실행 가능 -->
-            <?= $c['content'] ?>
+            <?= nl2br(html_escape($c['content'])) ?>
             <?php if ($isAdmin || (int)$c['user_id'] === (int)$_SESSION['user_id']): ?>
               <span class="comment-actions">
                 <form method="post" style="display:inline">

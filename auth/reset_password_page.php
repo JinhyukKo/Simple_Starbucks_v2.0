@@ -48,6 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html>
 <head>
     <title>비밀번호 재설정</title>
+    <link rel="stylesheet" href="/style.css">
+
 </head>
 <body>
     <h2>새 비밀번호 설정</h2>

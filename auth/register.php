@@ -9,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     $stmt = $pdo->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
     $stmt->execute([$username, $email, $password]);
-    echo "Regisration Compelete. <a href='login.php'>Login/a>";
+    echo "Regisration Compelete. <a href='login.php'>Login</a>";
 }
 ?>
 
@@ -17,6 +17,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <html>
 <head>
     <title>Register</title>
+    <link rel="stylesheet" href="/style.css">
+
 </head>
 <body>
     <h1>Register</h1>
