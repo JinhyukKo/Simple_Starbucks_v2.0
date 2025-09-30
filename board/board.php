@@ -72,6 +72,7 @@ $preserveQs = http_build_query([
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+  <div class="container">
   <h1>Board</h1>
 
   <!-- 검색 폼 -->
@@ -104,9 +105,7 @@ $preserveQs = http_build_query([
     <?php endif; ?>
   </form>
   <div>
-     <a href="/board/write.php">Write Posts</a> |
-    <a href="/board/profile.php">MyProfile</a> |
-    <a href="/auth/logout.php">Logout</a>
+     <a href="/board/write.php">Write Posts</a> 
   </div>
  
   <!-- 목록 -->
@@ -155,6 +154,8 @@ $preserveQs = http_build_query([
       </tbody>
     </table>
   <?php endif; ?>
+  </div>
+
 
 </body>
 </html>

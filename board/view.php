@@ -111,7 +111,8 @@ if ($hasAttachment) {
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <h1><?= $safeTitle ?></h1>
+  <div class="container">
+        <h1><?= $safeTitle ?></h1>
 
     <p>
         <a href="../index.php">main</a> |
@@ -186,5 +187,7 @@ if ($hasAttachment) {
     <?php else: ?>
       <p class="muted">Only Authenticated users can comment</p>
     <?php endif; ?>
+  </div>
+
 </body>
 </html>
