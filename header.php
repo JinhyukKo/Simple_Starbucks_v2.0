@@ -1,9 +1,12 @@
 <div class="header">
     <div class="header-content">
-        <div class="logo">
+        <a href="/">
+                   <div class="logo">
             <span class="logo-icon">☕️</span>
             <span class="logo-text">Simple Starbucks</span>
         </div>
+        </a>
+ 
         
         <?php if (isset($_SESSION['user_id'])): ?>
             <div class="user-section">
