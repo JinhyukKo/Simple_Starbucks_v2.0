@@ -1,37 +1,37 @@
 <?php
 require 'config.php';
-require '/auth/login_required';
+require './auth/login_required.php';
 
 
 // 상품 추가 처리
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["add_product"])) {
-    $name = $_POST["name"];
-    $description = $_POST["description"];
-    $price = $_POST["price"];
-    $category = $_POST["category"];
-    $image_url = $_POST["image_url"];
+// if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["add_product"])) {
+//     $name = $_POST["name"];
+//     $description = $_POST["description"];
+//     $price = $_POST["price"];
+//     $category = $_POST["category"];
+//     $image_url = $_POST["image_url"];
     
-    $sql = "INSERT INTO products (name, description, price, category, image_url) 
-            VALUES ('$name', '$description', $price, '$category', '$image_url')";
+//     $sql = "INSERT INTO products (name, description, price, category, image_url) 
+//             VALUES ('$name', '$description', $price, '$category', '$image_url')";
     
-        try {
-            $stmt = $pdo->query($sql);
-        } catch (PDOException $e) {
-            echo "Error: " . $e->getMessage();
-        }
-}
+//         try {
+//             $stmt = $pdo->query($sql);
+//         } catch (PDOException $e) {
+//             echo "Error: " . $e->getMessage();
+//         }
+// }
 
 // 상품 삭제 처리
-if (isset($_GET["delete_id"])) {
-    $delete_id = $_GET["delete_id"];
-    $sql = "DELETE FROM products WHERE id=$delete_id";
+// if (isset($_GET["delete_id"])) {
+//     $delete_id = $_GET["delete_id"];
+//     $sql = "DELETE FROM products WHERE id=$delete_id";
     
-    if ($pdo->query($sql) === TRUE) {
-        $message = "상품이 성공적으로 삭제되었습니다.";
-    } else {
-        $error = "오류: " . $sql . "<br>". $pdo->errorInfo();
-    }
-}
+//     if ($pdo->query($sql) === TRUE) {
+//         $message = "상품이 성공적으로 삭제되었습니다.";
+//     } else {
+//         $error = "오류: " . $sql . "<br>". $pdo->errorInfo();
+//     }
+// }
 
 // 상품 목록 가져오기
 $sql = "SELECT * FROM products ORDER BY created_at DESC";
@@ -296,7 +296,7 @@ $result = $stmt->fetchAll();
                                                 <td><span class="badge bg-secondary"><?php echo $row["category"]; ?></span></td>
                                                 <td><?php echo date("Y-m-d", strtotime($row["created_at"])); ?></td>
                                                 <td>
-                                                    <a href="?delete_id=<?php echo $row["id"]; ?>" class="btn btn-sm btn-danger" onclick="return confirm('정말로 이 상품을 삭제하시겠습니까?')">
+                                                    <a href="#" onclick="return deleteProduct(<?= $row["id"] ?>)" class="btn btn-sm btn-danger" onclick="return confirm('정말로 이 상품을 삭제하시겠습니까?')">
                                                         <i class="fas fa-trash"></i> 삭제
                                                     </a>
                                                 </td>
@@ -324,7 +324,7 @@ $result = $stmt->fetchAll();
                     <h5 class="modal-title" id="addProductModalLabel">상품 추가</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form method="POST" action="">
+                <form method="POST" action="./commerce/product.php">
                     <div class="modal-body">
                         <div class="row">
                             <div class="col-md-6 mb-3">
@@ -366,6 +366,32 @@ $result = $stmt->fetchAll();
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+<script>
+function deleteProduct(id) {
+    if (!confirm('정말로 이 상품을 삭제하시겠습니까?')) {
+        return false;
+    }
+
+    fetch('./commerce/product.php/'+id, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+    })
+    .then(response => response.text())
+    .then(result => {
+        alert(result);
+        location.reload(); // 성공 시 새로고침
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('삭제 중 오류가 발생했습니다.');
+    });
+
+    return false; // a태그 기본 동작 막기
+}
+</script>
 </body>
 </html>
 <?php
