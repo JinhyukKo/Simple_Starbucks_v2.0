@@ -30,6 +30,9 @@
     <div>
         <p>email : <?php echo $profile['email']; ?></p>
     </div>
+    <div>
+        <p>point : <?php echo $profile['balance']; ?></p>
+    </div>
     <a href="profile_modify.php">Edit</a>
     <a href="/auth/reset_password.php">Reset Password</a>
 
