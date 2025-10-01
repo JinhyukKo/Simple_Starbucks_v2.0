@@ -13,6 +13,10 @@ if (!defined('MAX_CART_QUANTITY')) {
     define('MAX_CART_QUANTITY', 99);
 }
 
+if (!defined('DEFAULT_PRODUCT_IMAGE')) {
+    define('DEFAULT_PRODUCT_IMAGE', '/assets/images/americano.jpg');
+}
+
 function normalizeQuantity($value): int
 {
     $quantity = filter_var(
@@ -31,6 +35,47 @@ function normalizeQuantity($value): int
     }
 
     return $quantity;
+}
+
+function resolveProductImageUrl($rawUrl): string
+{
+    if (!is_string($rawUrl)) {
+        return DEFAULT_PRODUCT_IMAGE;
+    }
+
+    $trimmed = trim($rawUrl);
+    if ($trimmed === '') {
+        return DEFAULT_PRODUCT_IMAGE;
+    }
+
+    if (preg_match('#^(https?:)?//#i', $trimmed)) {
+        return $trimmed;
+    }
+
+    if (preg_match('#^[a-z][a-z0-9+\-.]*:#i', $trimmed)) {
+        return DEFAULT_PRODUCT_IMAGE;
+    }
+
+    $normalized = str_replace('\\', '/', $trimmed);
+    $normalized = preg_replace('#/{2,}#', '/', $normalized);
+
+    while (strpos($normalized, '../') === 0) {
+        $normalized = substr($normalized, 3);
+    }
+
+    while (strpos($normalized, './') === 0) {
+        $normalized = substr($normalized, 2);
+    }
+
+    if ($normalized === '') {
+        return DEFAULT_PRODUCT_IMAGE;
+    }
+
+    if ($normalized[0] !== '/') {
+        $normalized = '/' . ltrim($normalized, '/');
+    }
+
+    return $normalized;
 }
 
 $userId = (int) $_SESSION['user_id'];
@@ -269,11 +314,7 @@ $cart = fetchCart($pdo, $userId);
         <div class="cart-items">
             <?php foreach ($cart['items'] as $item): ?>
                 <?php
-                    $imagePathRaw = $item['image_url'] ?? '';
-                    $imagePath = '/assets/images/americano.jpg';
-                    if (is_string($imagePathRaw) && $imagePathRaw !== '' && strpos($imagePathRaw, '/') === 0) {
-                        $imagePath = $imagePathRaw;
-                    }
+                    $imagePath = resolveProductImageUrl($item['image_url'] ?? null);
                 ?>
                 <div class="cart-card">
                     <img src="<?= html_escape($imagePath) ?>" alt="<?= html_escape($item['name'] ?? 'Product image') ?>">
