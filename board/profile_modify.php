@@ -1,6 +1,7 @@
 <?php
     include '../auth/login_required.php';
     require_once '../config.php';
+    include '../header.php';
 
     $username = $_SESSION['username'];
 
@@ -39,7 +40,14 @@
 
 <!DOCTYPE html>
 <html>
+    <head>
+    <link rel="stylesheet" href="/style.css">
+
+    </head>
+    <body>
+        
 <form method="post" enctype="multipart/form-data">
+
     <div>
         <?php if($profile['profile']): ?>
             <img src="profile/<?=$profile['profile']; ?>" alt="<?=$profile['profile'];?>">
@@ -51,14 +59,16 @@
     </div>
     <div>
         <p>name:<?php echo $profile['username']; ?></p>
-    </div>
+    </div><br/>
     <div>
         <p>email:<input type="text" name="email" value="<?php echo $profile['email']; ?>"></p>
-    </div>
+    </div><br/>
     <div>
         <p>password:<input type="password" name="password" ></p>
-    </div>
+    </div><br/>
     <input type="submit" value="저장">
     <a href="board.php">메인</a>
 </form>
+    </body>
+
 </html>
