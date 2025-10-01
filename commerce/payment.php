@@ -51,7 +51,33 @@ function summarizeCartItems(array $items) {
 }
 
 $balance = fetchUserBalance($pdo, $activeUserId);
-$cart = loadCart($pdo, $activeUserId);
+
+// store.php에서 직접 구매 시 URL 파라미터로 상품 정보를 받음
+if (isset($_GET['product_id']) && isset($_GET['quantity'])) {
+    $productId = (int)$_GET['product_id'];
+    $quantity = (int)$_GET['quantity'];
+
+    // 상품 정보 조회
+    $sql = "SELECT id AS product_id, name, price, image_url FROM products WHERE id = $productId";
+    $stmt = $pdo->query($sql);
+    $product = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+
+    if ($product) {
+        $product['quantity'] = $quantity;
+        $product['subtotal'] = $product['price'] * $quantity;
+
+        $cart = [
+            'items' => [$product],
+            'total' => $product['subtotal'],
+            'count' => $quantity,
+        ];
+    } else {
+        $cart = loadCart($pdo, $activeUserId);
+    }
+} else {
+    $cart = loadCart($pdo, $activeUserId);
+}
+
 $errors = [];
 $successMessage = null;
 $purchaseReceipt = null;
