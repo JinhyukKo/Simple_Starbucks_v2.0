@@ -4,9 +4,10 @@
 
     $username = $_SESSION['username'];
 
-    $sql = "SELECT * FROM users WHERE username='$username'";
-    $result = $pdo->query($sql);
-    $profile = $result->fetch();
+    $sql = "SELECT * FROM users WHERE username = ?";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$username]);
+    $profile = $stmt->fetch();
 ?>
 
 

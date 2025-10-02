@@ -4,9 +4,9 @@
 
     $username = $_SESSION['username'];
 
-    $sql = "SELECT * FROM users WHERE username='$username'";
-    $result = $pdo->query($sql);
-    $profile = $result->fetch();
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
+    $stmt->execute([$username]);
+    $profile = $stmt->fetch();
 
     if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
@@ -26,9 +26,9 @@
         }
 
         
-        $sql = "UPDATE users SET email='$email',password='$password', profile = '$filename' WHERE id = '$user_id' ";
-
-        $pdo->query($sql);
+        $sql = "UPDATE users SET email = ?, password = ?, profile = ? WHERE id = ?";
+        $stmtUp = $pdo->prepare($sql);
+        $stmtUp->execute([$email, $password, $filename, $user_id]);
 
         session_unset();
         header("Location: board.php");
