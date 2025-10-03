@@ -40,38 +40,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <title>Write Posts</title>
     <link rel="stylesheet" href="/style.css">
     <style>
-        :root {
-            --sb-green: #006241;
-            --sb-light-green: #d4e9e2;
-            --sb-gold: #cba258;
-            --sb-dark: #1e3932;
-            --sb-light: #f9f9f9;
-            --sb-white: #ffffff;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            background-color: var(--sb-light);
-            background-image: linear-gradient(to bottom, var(--sb-light-green) 0%, var(--sb-light) 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: var(--sb-white);
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            padding: 40px;
-        }
-
         h1 {
             color: var(--sb-green);
             margin-bottom: 30px;
@@ -221,12 +189,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </head>
 <body>
     <div class="container">
-        <h1>✍️ Write Posts</h1>
+        <h1>✍️ New Post</h1>
 
-        <div class="nav-links">
-            <a href="../index.php">🏠 Main</a>
-            <a href="board.php">📋 Board</a>
-        </div>
 
         <form method="POST" enctype="multipart/form-data">
             <div class="form-group">
@@ -251,7 +215,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <label for="is_secret">🔒 Set as private (only the author and administrators can view)</label>
             </div>
 
-            <button type="submit" class="submit-btn">📝 Publish Post</button>
+            <button type="submit" class="submit-btn">📝 Create Post</button>
         </form>
     </div>
 </body>

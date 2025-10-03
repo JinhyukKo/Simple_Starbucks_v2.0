@@ -20,62 +20,9 @@
     <title>My Profile</title>
     <link rel="stylesheet" href="/style.css">
     <style>
-        :root {
-            --sb-green: #006241;
-            --sb-light-green: #d4e9e2;
-            --sb-gold: #cba258;
-            --sb-dark: #1e3932;
-            --sb-light: #f9f9f9;
-            --sb-white: #ffffff;
-        }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
 
-        body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            background-color: var(--sb-light);
-            background-image: linear-gradient(to bottom, var(--sb-light-green) 0%, var(--sb-light) 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
 
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: var(--sb-white);
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            padding: 40px;
-        }
-
-        .nav-link {
-            display: inline-block;
-            color: var(--sb-green);
-            text-decoration: none;
-            font-weight: 600;
-            padding: 8px 20px;
-            margin-bottom: 30px;
-            border-radius: 6px;
-            transition: all 0.3s ease;
-        }
-
-        .nav-link:hover {
-            background: var(--sb-light-green);
-        }
-
-        h1 {
-            color: var(--sb-green);
-            margin-bottom: 30px;
-            font-size: 2em;
-            text-align: center;
-            font-weight: 700;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid var(--sb-light-green);
-        }
 
         .profile-image-container {
             text-align: center;
@@ -186,7 +133,6 @@
 </head>
 <body>
     <div class="container">
-        <a href="../index.php" class="nav-link">← Main</a>
 
         <h1>👤 My Profile</h1>
 

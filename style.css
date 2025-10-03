@@ -3,7 +3,6 @@ body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial
 form.search { margin: 16px 0; display: flex; gap: 8px; flex-wrap: wrap; }
 table { border-collapse: collapse; width: 100%; }
 th, td { border: 1px solid #ddd; padding: 8px; }
-thead th { background: #f7f7f7; }
 .muted { color:#666; }
 input[type="text"] { padding: 6px 8px; width: 260px; }
 input[type="password"] { padding: 6px 8px; width: 260px; }

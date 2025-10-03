@@ -182,13 +182,13 @@ if ($hasAttachment) {
     <?php endif; ?>
 
     <?php if (isset($_SESSION['user_id'])): ?>
-      <h3 style="margin-top: 30px;">Write Comments</h3>
+      <h3 style="margin-top: 30px;">New Comment</h3>
       <form method="post">
         <div style="margin-bottom: 10px;">
           <textarea name="comment_content" rows="4" placeholder="Put your comment here" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;"></textarea>
         </div>
         <div>
-          <button type="submit" style="padding: 10px 20px; background-color: #5cb85c; color: white; border: none; border-radius: 5px; cursor: pointer;">Write</button>
+          <button type="submit" style="padding: 10px 20px; background-color: #5cb85c; color: white; border: none; border-radius: 5px; cursor: pointer;">New Comment</button>
         </div>
       </form>
     <?php else: ?>
