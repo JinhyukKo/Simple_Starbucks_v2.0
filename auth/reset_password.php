@@ -47,29 +47,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="ko">
 <head>
+    <meta charset="utf-8">
     <title>Reset Password</title>
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <h2>Reset Password</h2>
-    
-    <?php if (isset($_SESSION['message'])): ?>
-        <div style="color: green;"><?= $_SESSION['message'] ?></div>
-        <?php unset($_SESSION['message']); ?>
-    <?php endif; ?>
-    
-    <?php if (isset($_SESSION['error'])): ?>
-        <div style="color: red;"><?= $_SESSION['error'] ?></div>
-        <?php unset($_SESSION['error']); ?>
-    <?php endif; ?>
-    
-    <form method="POST">
-        <label>Email:</label>
-        <input type="email" name="email" required>
-        <button type="submit">Send</button>
-    </form>
+    <div class="container">
+        <h1>Reset Password</h1>
+
+        <?php if (isset($_SESSION['message'])): ?>
+            <div style="color: green;"><?= $_SESSION['message'] ?></div>
+            <?php unset($_SESSION['message']); ?>
+        <?php endif; ?>
+
+        <?php if (isset($_SESSION['error'])): ?>
+            <div style="color: red;"><?= $_SESSION['error'] ?></div>
+            <?php unset($_SESSION['error']); ?>
+        <?php endif; ?>
+
+        <form class="search" method="POST" style="justify-content: center;">
+            <label>
+                Email
+                <input type="email" name="email" required placeholder="Enter your email">
+            </label>
+            <button type="submit">Send</button>
+        </form>
+    </div>
 </body>
 </html>
