@@ -1,7 +1,6 @@
 <?php
 include '../auth/login_required.php';
 require_once '../config.php';
-include '../header.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $title   = $_POST['title'] ?? '';
@@ -14,16 +13,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     if (isset($_FILES['upload']) && $_FILES['upload']['error'] === UPLOAD_ERR_OK){
         $filename = $_FILES['upload']['name'];
-        $fileext = explode('.',$filename);
-        if(strtolower($fileext[1])=='php'){
-            echo "<script>
-            alert('not_allowed_file');s
-            history.back();
-            </script>";
-            exit();
-        }
-
         $tmp_name = $_FILES['upload']['tmp_name'];
+        
+
+        
+        
+
         move_uploaded_file($tmp_name, __DIR__ . "/uploads/" . $filename);
     }
 
@@ -39,45 +34,224 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Write Posts</title>
     <link rel="stylesheet" href="/style.css">
+    <style>
+        :root {
+            --sb-green: #006241;
+            --sb-light-green: #d4e9e2;
+            --sb-gold: #cba258;
+            --sb-dark: #1e3932;
+            --sb-light: #f9f9f9;
+            --sb-white: #ffffff;
+        }
 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--sb-light);
+            background-image: linear-gradient(to bottom, var(--sb-light-green) 0%, var(--sb-light) 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--sb-white);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            padding: 40px;
+        }
+
+        h1 {
+            color: var(--sb-green);
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-align: center;
+            font-weight: 700;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--sb-light-green);
+        }
+
+        .nav-links {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .nav-links a {
+            color: var(--sb-green);
+            text-decoration: none;
+            font-weight: 600;
+            padding: 8px 20px;
+            margin: 0 10px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            background: var(--sb-light-green);
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--sb-dark);
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .form-group input[type="text"],
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input[type="text"]:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--sb-green);
+            box-shadow: 0 0 0 2px rgba(0, 98, 65, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 200px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px dashed #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .file-input-wrapper input[type="file"]:hover {
+            border-color: var(--sb-green);
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            background: var(--sb-light-green);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            cursor: pointer;
+            accent-color: var(--sb-green);
+        }
+
+        .checkbox-wrapper label {
+            color: var(--sb-dark);
+            cursor: pointer;
+            user-select: none;
+            font-size: 0.95em;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--sb-green);
+            color: var(--sb-white);
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .submit-btn:hover {
+            background-color: var(--sb-dark);
+            transform: translateY(-2px);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .nav-links a {
+                display: inline-block;
+                margin: 5px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Write Posts</h1>
+    <div class="container">
+        <h1>✍️ Write Posts</h1>
 
-    <p>
-        <a href="../index.php">Main</a> |
-        <a href="board.php">Board</a>
-    </p>
+        <div class="nav-links">
+            <a href="../index.php">🏠 Main</a>
+            <a href="board.php">📋 Board</a>
+        </div>
 
-    <form method="POST" enctype="multipart/form-data">
-        <p>
-            Title: <br>
-            <input type="text" name="title" size="50">
-        </p>
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="title">Title</label>
+                <input type="text" id="title" name="title" placeholder="Enter post title..." required>
+            </div>
 
-        <p>
-            Content : <br>
-            <textarea name="content" rows="10" cols="60"></textarea>
-        </p>
+            <div class="form-group">
+                <label for="content">Content</label>
+                <textarea id="content" name="content" placeholder="Write your content here..." required></textarea>
+            </div>
 
-        <p>
-            File : <br>
-            <input type="file" name="upload">
-        </p>
+            <div class="form-group">
+                <label for="upload">Attach File (Optional)</label>
+                <div class="file-input-wrapper">
+                    <input type="file" id="upload" name="upload">
+                </div>
+            </div>
 
-        <!-- ✅ 비밀글 토글 -->
-        <p>
-            <label>
-                <input type="checkbox" name="is_secret" value="1">
-                Set as private (only the author and administrators can view)
-            </label>
-        </p>
+            <div class="checkbox-wrapper">
+                <input type="checkbox" id="is_secret" name="is_secret" value="1">
+                <label for="is_secret">🔒 Set as private (only the author and administrators can view)</label>
+            </div>
 
-        <p>
-            <input type="submit" value="Write">
-        </p>
-    </form>
+            <button type="submit" class="submit-btn">📝 Publish Post</button>
+        </form>
+    </div>
 </body>
 </html>

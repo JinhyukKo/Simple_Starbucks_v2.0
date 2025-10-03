@@ -1,36 +1,38 @@
 <?php
 require 'config.php';
+require './auth/login_required.php';
+require './auth/is_admin.php';
 
 
 // 상품 추가 처리
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["add_product"])) {
-    $name = $_POST["name"];
-    $description = $_POST["description"];
-    $price = $_POST["price"];
-    $category = $_POST["category"];
-    $image_url = $_POST["image_url"];
+// if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["add_product"])) {
+//     $name = $_POST["name"];
+//     $description = $_POST["description"];
+//     $price = $_POST["price"];
+//     $category = $_POST["category"];
+//     $image_url = $_POST["image_url"];
     
-    $sql = "INSERT INTO products (name, description, price, category, image_url) 
-            VALUES ('$name', '$description', $price, '$category', '$image_url')";
+//     $sql = "INSERT INTO products (name, description, price, category, image_url) 
+//             VALUES ('$name', '$description', $price, '$category', '$image_url')";
     
-        try {
-            $stmt = $pdo->query($sql);
-        } catch (PDOException $e) {
-            echo "Error: " . $e->getMessage();
-        }
-}
+//         try {
+//             $stmt = $pdo->query($sql);
+//         } catch (PDOException $e) {
+//             echo "Error: " . $e->getMessage();
+//         }
+// }
 
 // 상품 삭제 처리
-if (isset($_GET["delete_id"])) {
-    $delete_id = $_GET["delete_id"];
-    $sql = "DELETE FROM products WHERE id=$delete_id";
+// if (isset($_GET["delete_id"])) {
+//     $delete_id = $_GET["delete_id"];
+//     $sql = "DELETE FROM products WHERE id=$delete_id";
     
-    if ($pdo->query($sql) === TRUE) {
-        $message = "상품이 성공적으로 삭제되었습니다.";
-    } else {
-        $error = "오류: " . $sql . "<br>". $pdo->errorInfo();
-    }
-}
+//     if ($pdo->query($sql) === TRUE) {
+//         $message = "상품이 성공적으로 삭제되었습니다.";
+//     } else {
+//         $error = "오류: " . $sql . "<br>". $pdo->errorInfo();
+//     }
+// }
 
 // 상품 목록 가져오기
 $sql = "SELECT * FROM products ORDER BY created_at DESC";
@@ -42,7 +44,7 @@ $result = $stmt->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>상품 관리 어드민</title>
+    <title>Admin Panel</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -150,32 +152,32 @@ $result = $stmt->fetchAll();
                 <div class="d-flex flex-column p-3">
                     <a href="#" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
                         <i class="fas fa-store fa-2x me-2"></i>
-                        <span class="fs-4">관리자 패널</span>
+                        <span class="fs-4">Admin Panel</span>
                     </a>
                     <hr>
                     <ul class="nav nav-pills flex-column mb-auto">
                         <li class="nav-item">
                             <a href="#" class="nav-link active">
                                 <i class="fas fa-box"></i>
-                                상품 관리
+                                Product Management
                             </a>
                         </li>
                         <li>
                             <a href="#" class="nav-link">
                                 <i class="fas fa-tags"></i>
-                                카테고리
+                                Category
                             </a>
                         </li>
                         <li>
                             <a href="#" class="nav-link">
                                 <i class="fas fa-chart-bar"></i>
-                                통계
+                                Statistics
                             </a>
                         </li>
                         <li>
                             <a href="#" class="nav-link">
                                 <i class="fas fa-cog"></i>
-                                설정
+                                Setting
                             </a>
                         </li>
                     </ul>
@@ -183,13 +185,13 @@ $result = $stmt->fetchAll();
                     <div class="dropdown">
                         <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
                             <img src="https://github.com/mdo.png" alt="" width="32" height="32" class="rounded-circle me-2">
-                            <strong>관리자</strong>
+                            <strong>Admin</strong>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1">
-                            <li><a class="dropdown-item" href="#">프로필</a></li>
-                            <li><a class="dropdown-item" href="#">설정</a></li>
+                            <li><a class="dropdown-item" href="#">Profile</a></li>
+                            <li><a class="dropdown-item" href="#">Setting</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#">로그아웃</a></li>
+                            <li><a class="dropdown-item" href="#">Logout</a></li>
                         </ul>
                     </div>
                 </div>
@@ -198,9 +200,9 @@ $result = $stmt->fetchAll();
             <!-- 메인 콘텐츠 -->
             <div class="col-md-9 col-lg-10 ml-sm-auto main-content">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                    <h1 class="h2">상품 관리</h1>
+                    <h1 class="h2">Product Management</h1>
                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
-                        <i class="fas fa-plus me-1"></i> 상품 추가
+                        <i class="fas fa-plus me-1"></i> Add Product
                     </button>
                 </div>
 
@@ -225,7 +227,7 @@ $result = $stmt->fetchAll();
                         <div class="card stats-card">
                             <div class="card-body">
                                 <h3 class="stats-number text-primary"><?php echo count($result); ?></h3>
-                                <p class="stats-label">전체 상품</p>
+                                <p class="stats-label">All Goods</p>
                             </div>
                         </div>
                     </div>
@@ -233,15 +235,7 @@ $result = $stmt->fetchAll();
                         <div class="card stats-card">
                             <div class="card-body">
                                 <h3 class="stats-number text-success">24</h3>
-                                <p class="stats-label">오늘 등록</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card stats-card">
-                            <div class="card-body">
-                                <h3 class="stats-number text-warning">5</h3>
-                                <p class="stats-label">재고 부족</p>
+                                <p class="stats-label">Added todays</p>
                             </div>
                         </div>
                     </div>
@@ -249,7 +243,7 @@ $result = $stmt->fetchAll();
                         <div class="card stats-card">
                             <div class="card-body">
                                 <h3 class="stats-number text-info">1,234</h3>
-                                <p class="stats-label">총 판매량</p>
+                                <p class="stats-label">Total Sales</p>
                             </div>
                         </div>
                     </div>
@@ -266,13 +260,13 @@ $result = $stmt->fetchAll();
                                 <thead>
                                     <tr>
                                         <th>ID</th>
-                                        <th>이미지</th>
-                                        <th>상품명</th>
-                                        <th>설명</th>
-                                        <th>가격</th>
-                                        <th>카테고리</th>
-                                        <th>등록일</th>
-                                        <th>작업</th>
+                                        <th>Image</th>
+                                        <th>Name</th>
+                                        <th>Description</th>
+                                        <th>Price</th>
+                                        <th>Category</th>
+                                        <th>Created_at</th>
+                                        <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -295,15 +289,15 @@ $result = $stmt->fetchAll();
                                                 <td><span class="badge bg-secondary"><?php echo $row["category"]; ?></span></td>
                                                 <td><?php echo date("Y-m-d", strtotime($row["created_at"])); ?></td>
                                                 <td>
-                                                    <a href="?delete_id=<?php echo $row["id"]; ?>" class="btn btn-sm btn-danger" onclick="return confirm('정말로 이 상품을 삭제하시겠습니까?')">
-                                                        <i class="fas fa-trash"></i> 삭제
+                                                    <a href="#" onclick="return deleteProduct(<?= $row["id"] ?>)" class="btn btn-sm btn-danger" onclick="return confirm('정말로 이 상품을 삭제하시겠습니까?')">
+                                                        <i class="fas fa-trash"></i> Remove
                                                     </a>
                                                 </td>
                                             </tr>
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <tr>
-                                            <td colspan="8" class="text-center py-4">등록된 상품이 없습니다.</td>
+                                            <td colspan="8" class="text-center py-4">Nothing is registered</td>
                                         </tr>
                                     <?php endif; ?>
                                 </tbody>
@@ -320,44 +314,44 @@ $result = $stmt->fetchAll();
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="addProductModalLabel">상품 추가</h5>
+                    <h5 class="modal-title" id="addProductModalLabel">Add Product</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form method="POST" action="">
+                <form method="POST" action="./commerce/product.php">
                     <div class="modal-body">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="name" class="form-label">상품명</label>
+                                <label for="name" class="form-label">Name</label>
                                 <input type="text" class="form-control" id="name" name="name" required>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="price" class="form-label">가격</label>
+                                <label for="price" class="form-label">Price</label>
                                 <input type="number" class="form-control" id="price" name="price" required>
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label for="description" class="form-label">상품 설명</label>
+                            <label for="description" class="form-label">Description</label>
                             <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="category" class="form-label">카테고리</label>
+                                <label for="category" class="form-label">Category</label>
                                 <select class="form-select" id="category" name="category" required>
-                                    <option value="" selected disabled>카테고리 선택</option>
+                                    <option value="" selected disabled>Select</option>
                                     <option value="bakery">bakery</option>
                                     <option value="coffee">coffee</option>
                                     <option value="giftCard">giftCard</option>
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="image_url" class="form-label">이미지 URL</label>
+                                <label for="image_url" class="form-label">Image URL</label>
                                 <input type="text" class="form-control" id="image_url" name="image_url">
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-                        <button type="submit" name="add_product" class="btn btn-primary">상품 추가</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" name="add_product" class="btn btn-primary">Add Product</button>
                     </div>
                 </form>
             </div>
@@ -365,6 +359,32 @@ $result = $stmt->fetchAll();
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+<script>
+function deleteProduct(id) {
+    if (!confirm('정말로 이 상품을 삭제하시겠습니까?')) {
+        return false;
+    }
+
+    fetch('./commerce/product.php/'+id, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+    })
+    .then(response => response.text())
+    .then(result => {
+        alert(result);
+        location.reload(); // 성공 시 새로고침
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('삭제 중 오류가 발생했습니다.');
+    });
+
+    return false; // a태그 기본 동작 막기
+}
+</script>
 </body>
 </html>
 <?php

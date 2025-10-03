@@ -19,23 +19,30 @@ $params = [];
 if ($q !== '') {
     switch ($field) {
         case 'title':
-            $where[] = "p.title LIKE '%$q%'";
+            $where[] = "p.title LIKE ?";
+            $params[] = "%$q%";
             break;
         case 'content':
-            $where[] = "p.content LIKE '%$q%'";
+            $where[] = "p.content LIKE ?";
+            $params[] = "%$q%";
             break;
         case 'author':
-            $where[] = "u.username LIKE '%$q%'";
+            $where[] = "u.username LIKE ?";
+            $params[] = "%$q%";
             break;
         case 'all':
         default:
-            $where[] = "(p.title LIKE '%$q%' OR p.content LIKE '%$q%' OR u.username LIKE '%$q%')";
+            $where[] = "(p.title LIKE ? OR p.content LIKE ? OR u.username LIKE ?)";
+            $params[] = "%$q%";
+            $params[] = "%$q%";
+            $params[] = "%$q%";
             break;
     }
 }
 
 if ($role !== '') {
-    $where[] = "COALESCE(p.role, u.role) = '$role'";
+    $where[] = "COALESCE(p.role, u.role) = ?";
+    $params[] = $role;
 }
 
 $whereSql = $where ? ('WHERE '.implode(' AND ', $where)) : '';
@@ -54,7 +61,8 @@ JOIN users u ON p.user_id = u.id
 ORDER BY p.created_at DESC, p.id DESC
 ";
 
-$stmt = $pdo->query($sql);
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // 현재 검색 파라미터를 쿼리스트링으로 만들기 (view.php로 보낼 용도)
@@ -72,6 +80,7 @@ $preserveQs = http_build_query([
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+  <div class="container">
   <h1>Board</h1>
 
   <!-- 검색 폼 -->
@@ -104,9 +113,7 @@ $preserveQs = http_build_query([
     <?php endif; ?>
   </form>
   <div>
-     <a href="/board/write.php">Write Posts</a> |
-    <a href="/board/profile.php">MyProfile</a> |
-    <a href="/auth/logout.php">Logout</a>
+     <a href="/board/write.php">Write Posts</a> 
   </div>
  
   <!-- 목록 -->
@@ -155,6 +162,8 @@ $preserveQs = http_build_query([
       </tbody>
     </table>
   <?php endif; ?>
+  </div>
+
 
 </body>
 </html>
