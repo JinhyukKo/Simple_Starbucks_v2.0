@@ -121,11 +121,6 @@ if ($hasAttachment) {
   <div class="container">
     <h1><?= $safeTitle ?></h1>
 
-    <div style="margin-bottom: 20px;">
-        <a href="../index.php">Main</a> |
-        <a href="board.php">Board</a>
-    </div>
-
     <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
         <strong>Author:</strong> <?= $safeAuthor ?>
         | <strong>Date:</strong> <?= $safeCreatedAt ?>

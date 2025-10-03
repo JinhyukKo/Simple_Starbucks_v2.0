@@ -2,8 +2,8 @@
 CREATE DATABASE IF NOT EXISTS board_system;
 USE board_system;
 
-DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS cart;
+DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS password_resets;
 DROP TABLE IF EXISTS messages;
 DROP TABLE IF EXISTS comments;
@@ -32,7 +32,7 @@ CREATE TABLE posts (
     user_id INT NOT NULL,
     filename VARCHAR(255),
     role ENUM('user','admin') NOT NULL DEFAULT 'user',
-    isSecret BOOLEAN NOT NULL DEFAULT FALSE,
+    is_secret BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -93,14 +93,14 @@ VALUES
 -- posts 더미 데이터 2개
 INSERT INTO posts (title, content, user_id, filename,role)
 VALUES
-('first post', 'first post.', 1, 'file1.txt','user'),
-('written by admin', 'admin post.', 2, 'file2.txt','admin');
+('Hello World ? ', "What's the tea today? ", 1, 'file1.txt','user'),
+('[important] Admin Note! ', "this is absolutely tiring, we are running out of stocks right now. normal users must not see this content", 2, 'file2.txt','admin');
 
 INSERT INTO comments (post_id, user_id, content)
 VALUES
-(1, 1, 'first comment.'),
-(1, 2, 'comment written by admin.'),
-(2, 1, 'user comment');
+(1, 1, 'who cares?'),
+(1, 2, 'I am an admin btw'),
+(2, 1, 'Whats up');
 
 INSERT INTO products (name, description, price, category, image_url)
 VALUES

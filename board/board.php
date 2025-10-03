@@ -108,13 +108,11 @@ $preserveQs = http_build_query([
       </select>
     </label>
     <button type="submit">Search</button>
+     <a href="/board/write.php"> ✍️ Write A Post</a> 
     <?php if ($q!=='' || $role!==''): ?>
       <a href="board.php" style="align-self:center">Reset</a>
     <?php endif; ?>
   </form>
-  <div>
-     <a href="/board/write.php">Write Posts</a> 
-  </div>
  
   <!-- 목록 -->
   <?php if (!$rows && $q !== ''): ?>
