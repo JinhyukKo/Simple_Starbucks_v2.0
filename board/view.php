@@ -110,8 +110,8 @@ if ($hasAttachment) {
     $downloadUrl = 'uploads/' . rawurlencode($downloadName);
 }
 ?>
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="ko">
 <head>
     <meta charset="utf-8">
     <title><?= $safeTitle ?></title>
@@ -119,59 +119,63 @@ if ($hasAttachment) {
 </head>
 <body>
   <div class="container">
-        <h1><?= $safeTitle ?></h1>
+    <h1><?= $safeTitle ?></h1>
 
-    <p>
-        <a href="../index.php">main</a> |
-        <a href="board.php">borad</a>
-    </p>
+    <div style="margin-bottom: 20px;">
+        <a href="../index.php">Main</a> |
+        <a href="board.php">Board</a>
+    </div>
 
-    <p>작성자: <?= $safeAuthor ?>
-       | 작성일: <?= $safeCreatedAt ?>
-       <?php if ($isSecret): ?>
-         | <strong>🔒 비밀글</strong>
-         <?php if ($isAuthorAdmin): ?>
-           | <em>(Admin's Secret Post)</em>
-         <?php endif; ?>
-       <?php endif; ?>
-    </p>
+    <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+        <strong>Author:</strong> <?= $safeAuthor ?>
+        | <strong>Date:</strong> <?= $safeCreatedAt ?>
+        <?php if ($isSecret): ?>
+          | <strong style="color: #d9534f;">🔒 Secret Post</strong>
+          <?php if ($isAuthorAdmin): ?>
+            | <em>(Admin's Secret Post)</em>
+          <?php endif; ?>
+        <?php endif; ?>
+    </div>
 
-    <div>
+    <div style="background-color: white; padding: 20px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 20px; min-height: 200px;">
         <?= $contentHtml ?>
     </div>
 
     <?php if ($hasAttachment): ?>
-        <p><a href="<?= html_escape($downloadUrl) ?>" download>
-            <?= html_escape($downloadName) ?>
-        </a></p>
+        <div style="margin-bottom: 20px; padding: 10px; background-color: #f9f9f9; border-left: 3px solid #5bc0de;">
+            <strong>Attachment:</strong>
+            <a href="<?= html_escape($downloadUrl) ?>" download>
+                <?= html_escape($downloadName) ?>
+            </a>
+        </div>
     <?php endif; ?>
 
-    <p>
-        <a href="board.php">List</a> |
+    <div style="margin-bottom: 30px;">
+        <a href="board.php" style="padding: 8px 16px; background-color: #5bc0de; color: white; text-decoration: none; border-radius: 3px; display: inline-block;">List</a>
         <?php if ($isOwner || $isAdmin): ?>
-          <a href="delete.php?id=<?= (int)$post['id']; ?>" onclick="return confirm('Confirm to Delete')">Delete</a>
+          <a href="delete.php?id=<?= (int)$post['id']; ?>" onclick="return confirm('Confirm to Delete')" style="padding: 8px 16px; background-color: #d9534f; color: white; text-decoration: none; border-radius: 3px; display: inline-block;">Delete</a>
         <?php endif; ?>
-    </p>
+    </div>
 
     <!-- ======================
          댓글 영역
          ====================== -->
-    <h2>댓글</h2>
+    <h2 style="border-bottom: 2px solid #333; padding-bottom: 10px;">Comments</h2>
 
     <?php if ($comments): ?>
       <?php foreach ($comments as $c): ?>
-        <div class="comment">
-          <div class="meta">
-            <?= html_escape($c['username']) ?>
-            (<?= html_escape($c['created_at']) ?>)
+        <div style="background-color: #f9f9f9; padding: 15px; margin-bottom: 10px; border-radius: 5px; border-left: 3px solid #5bc0de;">
+          <div style="color: #666; font-size: 0.9em; margin-bottom: 8px;">
+            <strong><?= html_escape($c['username']) ?></strong>
+            <span style="margin-left: 10px;">(<?= html_escape($c['created_at']) ?>)</span>
           </div>
-          <div class="body">
+          <div style="line-height: 1.6;">
             <?= nl2br(html_escape($c['content'])) ?>
             <?php if ($isAdmin || (int)$c['user_id'] === (int)$_SESSION['user_id']): ?>
-              <span class="comment-actions">
+              <span style="margin-left: 15px;">
                 <form method="post" style="display:inline">
                   <input type="hidden" name="delete_comment_id" value="<?= (int)$c['id'] ?>">
-                  <button type="submit" onclick="return confirm('Will you delete this comment?')">Delete</button>
+                  <button type="submit" onclick="return confirm('Will you delete this comment?')" style="padding: 4px 8px; background-color: #d9534f; color: white; border: none; border-radius: 3px; cursor: pointer;">Delete</button>
                 </form>
               </span>
             <?php endif; ?>
@@ -183,16 +187,17 @@ if ($hasAttachment) {
     <?php endif; ?>
 
     <?php if (isset($_SESSION['user_id'])): ?>
-      <h3>Write Comments
-      </h3>
+      <h3 style="margin-top: 30px;">Write Comments</h3>
       <form method="post">
-        <p>
-          <textarea name="comment_content" rows="4" placeholder="put your comment here"></textarea>
-        </p>
-        <p><button type="submit">Write</button></p>
+        <div style="margin-bottom: 10px;">
+          <textarea name="comment_content" rows="4" placeholder="Put your comment here" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;"></textarea>
+        </div>
+        <div>
+          <button type="submit" style="padding: 10px 20px; background-color: #5cb85c; color: white; border: none; border-radius: 5px; cursor: pointer;">Write</button>
+        </div>
       </form>
     <?php else: ?>
-      <p class="muted">Only Authenticated users can comment</p>
+      <p class="muted">Only authenticated users can comment</p>
     <?php endif; ?>
   </div>
 
