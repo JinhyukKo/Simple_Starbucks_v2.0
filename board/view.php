@@ -14,9 +14,10 @@ $post_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
 $sql = "SELECT p.*, u.username, u.role AS author_role
         FROM posts p JOIN users u ON p.user_id = u.id
-        WHERE p.id = $post_id";
-$result = $pdo->query($sql);
-$post = $result ? $result->fetch() : false;
+        WHERE p.id = ?";
+$stmt = $pdo->prepare($sql);
+$stmt->execute([$post_id]);
+$post = $stmt ? $stmt->fetch() : false;
 
 if (!$post) {
     http_response_code(404);
@@ -64,8 +65,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $uid = $_SESSION['user_id'];
         if ($uid && trim($cmt) !== '') {
             $sqlIns = "INSERT INTO comments (post_id, user_id, content, created_at)
-                       VALUES ($post_id, $uid, '$cmt', NOW())";
-            $pdo->query($sqlIns);
+                       VALUES (?, ?, ?, NOW())";
+            $stmtIns = $pdo->prepare($sqlIns);
+            $stmtIns->execute([$post_id, $uid, $cmt]);
         }
         header("Location: view.php?id=" . $post_id);
         exit;
@@ -75,9 +77,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['delete_comment_id'])) {
         $cid = (int)$_POST['delete_comment_id'];
         // 해당 댓글 소유자 확인
-        $row = $pdo->query("SELECT user_id FROM comments WHERE id = $cid")->fetch();
+        $stmtRow = $pdo->prepare("SELECT user_id FROM comments WHERE id = ?");
+        $stmtRow->execute([$cid]);
+        $row = $stmtRow->fetch();
         if ($row && ($isAdmin || (int)$row['user_id'] === (int)$_SESSION['user_id'])) {
-            $pdo->query("DELETE FROM comments WHERE id = $cid");
+            $stmtDel = $pdo->prepare("DELETE FROM comments WHERE id = ?");
+            $stmtDel->execute([$cid]);
         }
         header("Location: view.php?id=" . $post_id);
         exit;
@@ -85,12 +90,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // 댓글 목록
-$comments = $pdo->query("
+$stmtComments = $pdo->prepare("
     SELECT c.id, c.content, c.created_at, c.user_id, u.username
     FROM comments c JOIN users u ON c.user_id = u.id
-    WHERE c.post_id = $post_id
+    WHERE c.post_id = ?
     ORDER BY c.created_at ASC
-")->fetchAll();
+");
+$stmtComments->execute([$post_id]);
+$comments = $stmtComments->fetchAll();
 
 $safeTitle = html_escape($post['title']);
 $safeAuthor = html_escape($post['username']);

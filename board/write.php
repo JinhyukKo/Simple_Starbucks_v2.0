@@ -1,7 +1,6 @@
 <?php
 include '../auth/login_required.php';
 require_once '../config.php';
-include '../header.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $title   = $_POST['title'] ?? '';
@@ -14,16 +13,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     if (isset($_FILES['upload']) && $_FILES['upload']['error'] === UPLOAD_ERR_OK){
         $filename = $_FILES['upload']['name'];
-        $fileext = explode('.',$filename);
-        if(strtolower($fileext[1])=='php'){
-            echo "<script>
-            alert('not_allowed_file');s
-            history.back();
-            </script>";
+        $tmp_name = $_FILES['upload']['tmp_name'];
+        
+
+        
+        $file_extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        $blocked_extensions = ['php', 'php3', 'php4', 'php5', 'phtml', 'pht'];
+
+        if (in_array($file_extension, $blocked_extensions)) {
+            echo "<script>alert('not allowed.'); history.back();</script>";
             exit();
         }
 
-        $tmp_name = $_FILES['upload']['tmp_name'];
+        
+        $file_type = $_FILES['upload']['type'];
+        $allowed_mime_types = ['image/jpg', 'image/jpeg', 'image/png'];
+
+        if (!in_array($file_type, $allowed_mime_types)) {
+            echo "<script>alert('not allowed.'); history.back();</script>";
+            exit();
+        }
+
         move_uploaded_file($tmp_name, __DIR__ . "/uploads/" . $filename);
     }
 

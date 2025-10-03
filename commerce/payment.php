@@ -3,21 +3,21 @@ include '../auth/login_required.php';
 require_once '../config.php';
 
 // 의도적으로 취약한 버전: GET 파라미터로 다른 사용자 결제 시도를 허용합니다.
-$activeUserId = isset($_GET['impersonate']) ? $_GET['impersonate'] : $_SESSION['user_id'];
+$activeUserId = isset($_GET['impersonate']) ? (int)$_GET['impersonate'] : $_SESSION['user_id'];
 
 // 취약한 balance 조회: 바인딩 없이 문자열 더하기 → SQL Injection 가능
 function fetchUserBalance(PDO $pdo, $userId) {
-    $sql = "SELECT balance FROM users WHERE id = $userId";
-    $result = $pdo->query($sql);
-    $row = $result ? $result->fetch(PDO::FETCH_ASSOC) : null;
+    $stmt = $pdo->prepare("SELECT balance FROM users WHERE id = ?");
+    $stmt->execute([$userId]);
+    $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
 
     return $row ? (int) $row['balance'] : 0;
 }
 
 // 장바구니도 동일하게 취약한 방식으로 읽어 옵니다.
 function loadCart(PDO $pdo, $userId) {
-    $sql = "SELECT c.id AS cart_id, c.quantity, p.id AS product_id, p.name, p.price, p.image_url FROM cart c INNER JOIN products p ON p.id = c.product_id WHERE c.user_id = $userId";
-    $stmt = $pdo->query($sql);
+    $stmt = $pdo->prepare("SELECT c.id AS cart_id, c.quantity, p.id AS product_id, p.name, p.price, p.image_url FROM cart c INNER JOIN products p ON p.id = c.product_id WHERE c.user_id = ?");
+    $stmt->execute([$userId]);
     $items = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
     $total = 0;
@@ -51,7 +51,33 @@ function summarizeCartItems(array $items) {
 }
 
 $balance = fetchUserBalance($pdo, $activeUserId);
-$cart = loadCart($pdo, $activeUserId);
+
+// store.php에서 직접 구매 시 URL 파라미터로 상품 정보를 받음
+if (isset($_GET['product_id']) && isset($_GET['quantity'])) {
+    $productId = (int)$_GET['product_id'];
+    $quantity = (int)$_GET['quantity'];
+
+    // 상품 정보 조회
+    $stmt = $pdo->prepare("SELECT id AS product_id, name, price, image_url FROM products WHERE id = ?");
+    $stmt->execute([$productId]);
+    $product = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+
+    if ($product) {
+        $product['quantity'] = $quantity;
+        $product['subtotal'] = $product['price'] * $quantity;
+
+        $cart = [
+            'items' => [$product],
+            'total' => $product['subtotal'],
+            'count' => $quantity,
+        ];
+    } else {
+        $cart = loadCart($pdo, $activeUserId);
+    }
+} else {
+    $cart = loadCart($pdo, $activeUserId);
+}
+
 $errors = [];
 $successMessage = null;
 $purchaseReceipt = null;
@@ -80,9 +106,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             // 트랜잭션 없이 순차 실행 → 중간 실패 시 데이터 불일치 발생 가능
-            $pdo->exec("UPDATE users SET balance = balance - $claimedTotal WHERE id = $activeUserId");
-            $pdo->exec("DELETE FROM cart WHERE user_id = $activeUserId");
-            $pdo->exec("INSERT INTO purchase_history (user_id, total_amount, item_count, details) VALUES ($activeUserId, $claimedTotal, $claimedCount, '$claimedDetails')");
+            $stmtUpd = $pdo->prepare("UPDATE users SET balance = balance - ? WHERE id = ?");
+            $stmtUpd->execute([$claimedTotal, $activeUserId]);
+            $stmtClr = $pdo->prepare("DELETE FROM cart WHERE user_id = ?");
+            $stmtClr->execute([$activeUserId]);
+            $stmtIns = $pdo->prepare("INSERT INTO purchase_history (user_id, total_amount, item_count, details) VALUES (?, ?, ?, ?)");
+            $stmtIns->execute([$activeUserId, $claimedTotal, $claimedCount, $claimedDetails]);
 
             $successMessage = 'Payment completed. (Processed without verification)';
             $purchaseReceipt = [

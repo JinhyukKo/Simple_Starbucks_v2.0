@@ -1,7 +1,6 @@
 <?php
 require_once '../auth/login_required.php';
 require_once '../config.php';
-include '../header.php';
 ?>
 
 <!DOCTYPE html>
@@ -16,6 +15,12 @@ include '../header.php';
 <body>
     <div class="store-container">
         <h1>Simple Starbucks Store</h1>
+            <div class="logout-btn">
+            <a href="../auth/logout.php" style="background: #00704A; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                    logout
+            </a>
+            </div>
+
         <?php
         // 카테고리 순서 정의
         $categories = [

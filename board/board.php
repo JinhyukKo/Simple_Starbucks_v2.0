@@ -17,29 +17,28 @@ $where = [];
 $params = [];
 
 if ($q !== '') {
-  switch ($field) {
-      case 'title':
-          $where[] = "p.title LIKE ?";
-          $params[] = "%$q%";
-          break;
-      case 'content':
-          $where[] = "p.content LIKE ?";
-          $params[] = "%$q%";
-          break;
-      case 'author':
-          $where[] = "u.username LIKE ?";
-          $params[] = "%$q%";
-          break;
-      case 'all':
-      default:
-          $where[] = "(p.title LIKE ? OR p.content LIKE ? OR u.username LIKE ?)";
-          $params[] = "%$q%";
-          $params[] = "%$q%";
-          $params[] = "%$q%";
-          break;
-  }
+    switch ($field) {
+        case 'title':
+            $where[] = "p.title LIKE ?";
+            $params[] = "%$q%";
+            break;
+        case 'content':
+            $where[] = "p.content LIKE ?";
+            $params[] = "%$q%";
+            break;
+        case 'author':
+            $where[] = "u.username LIKE ?";
+            $params[] = "%$q%";
+            break;
+        case 'all':
+        default:
+            $where[] = "(p.title LIKE ? OR p.content LIKE ? OR u.username LIKE ?)";
+            $params[] = "%$q%";
+            $params[] = "%$q%";
+            $params[] = "%$q%";
+            break;
+    }
 }
-
 
 if ($role !== '') {
     $where[] = "COALESCE(p.role, u.role) = ?";
