@@ -1,6 +1,7 @@
 <?php
 include '../auth/login_required.php';
 require_once '../config.php';
+include '../header.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $title   = $_POST['title'] ?? '';

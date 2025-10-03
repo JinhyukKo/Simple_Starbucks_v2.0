@@ -3,6 +3,7 @@ session_start();
 
 require '../config.php'; // 데이터베이스 연결 파일
 include './send_mail.php';
+include '../header.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     #$email = filter_var($_POST['email'], FILTER_VALIDATE_EMAIL);
