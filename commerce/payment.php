@@ -166,7 +166,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button class="btn-secondary" onclick="location.href='/commerce/cart.php'">Back to cart</button>
         </div>
     </div>
-    <p>Current user ID: <?= $activeUserId ?> / Remaining points: <?= $balance ?></p>
 <?php if ($errors): ?>
     <div style="color:red;">
         <?php foreach ($errors as $error): ?>
@@ -182,7 +181,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?php endif; ?>
 
 <section>
-    <h2>Order Summary (no output encoding)</h2>
+    <h2>Order Summary</h2>
     <?php if (!$cart['items']): ?>
         <p>The cart is empty.</p>
     <?php else: ?>
@@ -220,12 +219,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </section>
 
 <?php if ($purchaseReceipt): ?>
-    <section style="margin-top:32px;">
-        <h2>Receipt</h2>
-        <p>Total quantity: <?= $purchaseReceipt['count'] ?></p>
-        <p>Total amount: <?= $purchaseReceipt['total'] ?></p>
-        <p>Details: <?= $purchaseReceipt['details'] ?></p>
-        <p>Remaining points: <?= $balance ?></p>
+    <section style="margin-top:32px; background-color: #f0f8ff; border: 2px solid #5bc0de; border-radius: 10px; padding: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+        <h2 style="color: #00704A; border-bottom: 2px solid #00704A; padding-bottom: 10px; margin-bottom: 20px;">✅ Payment Completed - Receipt</h2>
+        <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
+                <strong>Total quantity:</strong>
+                <span><?= $purchaseReceipt['count'] ?> items</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
+                <strong>Total amount:</strong>
+                <span style="color: #d9534f; font-size: 1.2em;">₩<?= number_format($purchaseReceipt['total']) ?></span>
+            </div>
+            <div style="padding: 10px 0; border-bottom: 1px solid #eee;">
+                <strong>Details:</strong>
+                <div style="margin-top: 8px; color: #666;"><?= $purchaseReceipt['details'] ?></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 10px 0; margin-top: 10px;">
+                <strong>Remaining points:</strong>
+                <span style="color: #5cb85c; font-size: 1.2em; font-weight: bold;">₩<?= number_format($balance) ?></span>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 20px;">
+            <p style="color: #666; font-style: italic;">Thank you for your purchase!</p>
+        </div>
     </section>
 <?php endif; ?>
 
