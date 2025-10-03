@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <head>
     <title>Register</title>
     <link rel="stylesheet" href="/style.css">
-
+<link rel="stylesheet" href="/auth/login.css">
 </head>
 <body>
     <h1>Register</h1>
@@ -40,7 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <input type="submit" value="register">
         </p>
     </form>
-
-    <p><a href="login.php">Login</a>
+<div class="container">
+    <a href="login.php">Login</a>
+</div>
 </body>
 </html>

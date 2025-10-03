@@ -30,6 +30,7 @@ form {
 form p { margin: 0 0 14px; }
 
 input[type="text"],
+input[type="email"],
 input[type="password"] {
     width: 100%;
     box-sizing: border-box;
