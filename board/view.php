@@ -1,6 +1,7 @@
-<?php
+﻿<?php
 include '../auth/login_required.php';
 require_once '../config.php';
+require_once __DIR__ . '/../auth/csrf.php';
 include '../header.php';
 
 if (!function_exists('html_escape')) {
@@ -17,7 +18,7 @@ $sql = "SELECT p.*, u.username, u.role AS author_role
         WHERE p.id = ?";
 $stmt = $pdo->prepare($sql);
 $stmt->execute([$post_id]);
-$post = $stmt ? $stmt->fetch() : false;
+$post = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
 
 if (!$post) {
     http_response_code(404);
@@ -27,17 +28,13 @@ if (!$post) {
 $myId   = $_SESSION['user_id'] ?? 0;
 $myRole = $_SESSION['role'] ?? 'user';
 
-$isSecret = (int)$post['is_secret'] === 1;
-$isOwner  = ($myId == (int)$post['user_id']);
+$isSecret = (int) $post['is_secret'] === 1;
+$isOwner  = ((int) $myId === (int) $post['user_id']);
 $isAdmin  = ($myRole === 'admin');
 $isAuthorAdmin = ($post['author_role'] === 'admin');
 
-// ✅ 수정된 비밀글 접근 제어: 
-// - 관리자가 작성한 비밀글은 관리자만 접근 가능
-// - 일반 사용자가 작성한 비밀글은 작성자와 관리자만 접근 가능
 if ($isSecret) {
     if ($isAuthorAdmin) {
-        // 관리자가 작성한 비밀글: 관리자만 접근 가능
         if (!$isAdmin) {
             http_response_code(403);
             echo "<h2>Secret Post.</h2><p>This is an admin's secret post. Only administrators are allowed to read this content.</p>";
@@ -45,7 +42,6 @@ if ($isSecret) {
             exit;
         }
     } else {
-        // 일반 사용자가 작성한 비밀글: 작성자 또는 관리자만 접근 가능
         if (!($isOwner || $isAdmin)) {
             http_response_code(403);
             echo "<h2>Secret Post.</h2><p>The author and admin are allowed to read this content.</p>";
@@ -55,49 +51,53 @@ if ($isSecret) {
     }
 }
 
-/* ======================
-   댓글 작성/삭제 처리
-   ====================== */
+$errors = [];
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // 댓글 작성
-    if (isset($_POST['comment_content'])) {
-        $cmt = $_POST['comment_content'] ?? '';
-        $uid = $_SESSION['user_id'];
-        if ($uid && trim($cmt) !== '') {
-            $sqlIns = "INSERT INTO comments (post_id, user_id, content, created_at)
-                       VALUES (?, ?, ?, NOW())";
-            $stmtIns = $pdo->prepare($sqlIns);
-            $stmtIns->execute([$post_id, $uid, $cmt]);
-        }
-        header("Location: view.php?id=" . $post_id);
-        exit;
+    try {
+        csrf_enforce($_POST['csrf_token'] ?? null);
+        csrf_regenerate();
+    } catch (RuntimeException $e) {
+        http_response_code(400);
+        exit($e->getMessage());
     }
 
-    // 댓글 삭제 (본인 또는 admin만)
+    if (isset($_POST['comment_content'])) {
+        $cmt = trim((string) ($_POST['comment_content'] ?? ''));
+        $uid = $_SESSION['user_id'];
+        if ($uid && $cmt !== '') {
+            if (mb_strlen($cmt) > 2000) {
+                $errors[] = 'Comments must be 2000 characters or fewer.';
+            } else {
+                $sqlIns = "INSERT INTO comments (post_id, user_id, content, created_at)
+                           VALUES (?, ?, ?, NOW())";
+                $stmtIns = $pdo->prepare($sqlIns);
+                $stmtIns->execute([$post_id, $uid, $cmt]);
+            }
+        }
+        if (!$errors) {
+            header('Location: view.php?id=' . $post_id);
+            exit;
+        }
+    }
+
     if (isset($_POST['delete_comment_id'])) {
-        $cid = (int)$_POST['delete_comment_id'];
-        // 해당 댓글 소유자 확인
-        $stmtRow = $pdo->prepare("SELECT user_id FROM comments WHERE id = ?");
+        $cid = (int) $_POST['delete_comment_id'];
+        $stmtRow = $pdo->prepare('SELECT user_id FROM comments WHERE id = ?');
         $stmtRow->execute([$cid]);
-        $row = $stmtRow->fetch();
-        if ($row && ($isAdmin || (int)$row['user_id'] === (int)$_SESSION['user_id'])) {
-            $stmtDel = $pdo->prepare("DELETE FROM comments WHERE id = ?");
+        $row = $stmtRow->fetch(PDO::FETCH_ASSOC);
+        if ($row && ($isAdmin || (int) $row['user_id'] === (int) $_SESSION['user_id'])) {
+            $stmtDel = $pdo->prepare('DELETE FROM comments WHERE id = ?');
             $stmtDel->execute([$cid]);
         }
-        header("Location: view.php?id=" . $post_id);
+        header('Location: view.php?id=' . $post_id);
         exit;
     }
 }
 
-// 댓글 목록
-$stmtComments = $pdo->prepare("
-    SELECT c.id, c.content, c.created_at, c.user_id, u.username
-    FROM comments c JOIN users u ON c.user_id = u.id
-    WHERE c.post_id = ?
-    ORDER BY c.created_at ASC
-");
+$stmtComments = $pdo->prepare("\n    SELECT c.id, c.content, c.created_at, c.user_id, u.username\n    FROM comments c JOIN users u ON c.user_id = u.id\n    WHERE c.post_id = ?\n    ORDER BY c.created_at ASC\n");
 $stmtComments->execute([$post_id]);
-$comments = $stmtComments->fetchAll();
+$comments = $stmtComments->fetchAll(PDO::FETCH_ASSOC);
 
 $safeTitle = html_escape($post['title']);
 $safeAuthor = html_escape($post['username']);
@@ -109,6 +109,8 @@ if ($hasAttachment) {
     $downloadName = basename($post['filename']);
     $downloadUrl = 'uploads/' . rawurlencode($downloadName);
 }
+
+$csrfToken = csrf_token();
 ?>
 <!doctype html>
 <html lang="ko">
@@ -125,7 +127,7 @@ if ($hasAttachment) {
         <strong>Author:</strong> <?= $safeAuthor ?>
         | <strong>Date:</strong> <?= $safeCreatedAt ?>
         <?php if ($isSecret): ?>
-          | <strong style="color: #d9534f;">🔒 Secret Post</strong>
+          | <strong style="color: #d9534f;">[Secret Post]</strong>
           <?php if ($isAuthorAdmin): ?>
             | <em>(Admin's Secret Post)</em>
           <?php endif; ?>
@@ -148,14 +150,25 @@ if ($hasAttachment) {
     <div style="margin-bottom: 30px;">
         <a href="board.php" style="padding: 8px 16px; background-color: #5bc0de; color: white; text-decoration: none; border-radius: 3px; display: inline-block;">List</a>
         <?php if ($isOwner || $isAdmin): ?>
-          <a href="edit.php?id=<?= (int)$post['id']; ?>" style="padding: 8px 16px; background-color: #f0ad4e; color: white; text-decoration: none; border-radius: 3px; display: inline-block;">Edit</a>
-          <a href="delete.php?id=<?= (int)$post['id']; ?>" onclick="return confirm('Confirm to Delete')" style="padding: 8px 16px; background-color: #d9534f; color: white; text-decoration: none; border-radius: 3px; display: inline-block;">Delete</a>
+          <a href="edit.php?id=<?= (int) $post['id']; ?>" style="padding: 8px 16px; background-color: #f0ad4e; color: white; text-decoration: none; border-radius: 3px; display: inline-block;">Edit</a>
+          <form method="post" action="delete.php" style="display:inline; margin-left:8px;">
+            <input type="hidden" name="id" value="<?= (int) $post['id']; ?>">
+            <input type="hidden" name="csrf_token" value="<?= html_escape($csrfToken) ?>">
+            <button type="submit" onclick="return confirm('Confirm to Delete')" style="padding: 8px 16px; background-color: #d9534f; color: white; border: none; border-radius: 3px; cursor: pointer;">Delete</button>
+          </form>
         <?php endif; ?>
     </div>
 
-    <!-- ======================
-         댓글 영역
-         ====================== -->
+    <?php if ($errors): ?>
+        <div style="color:#d9534f; border:1px solid #d9534f; padding:12px; border-radius:6px; margin-bottom:16px;">
+            <ul>
+                <?php foreach ($errors as $error): ?>
+                    <li><?= html_escape($error) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    <?php endif; ?>
+
     <h2 style="border-bottom: 2px solid #333; padding-bottom: 10px;">Comments</h2>
 
     <?php if ($comments): ?>
@@ -167,10 +180,11 @@ if ($hasAttachment) {
           </div>
           <div style="line-height: 1.6;">
             <?= nl2br(html_escape($c['content'])) ?>
-            <?php if ($isAdmin || (int)$c['user_id'] === (int)$_SESSION['user_id']): ?>
+            <?php if ($isAdmin || (int) $c['user_id'] === (int) $_SESSION['user_id']): ?>
               <span style="margin-left: 15px;">
                 <form method="post" style="display:inline">
-                  <input type="hidden" name="delete_comment_id" value="<?= (int)$c['id'] ?>">
+                  <input type="hidden" name="delete_comment_id" value="<?= (int) $c['id'] ?>">
+                  <input type="hidden" name="csrf_token" value="<?= html_escape($csrfToken) ?>">
                   <button type="submit" onclick="return confirm('Will you delete this comment?')" style="padding: 4px 8px; background-color: #d9534f; color: white; border: none; border-radius: 3px; cursor: pointer;">Delete</button>
                 </form>
               </span>
@@ -185,6 +199,7 @@ if ($hasAttachment) {
     <?php if (isset($_SESSION['user_id'])): ?>
       <h3 style="margin-top: 30px;">New Comment</h3>
       <form method="post">
+        <input type="hidden" name="csrf_token" value="<?= html_escape($csrfToken) ?>">
         <div style="margin-bottom: 10px;">
           <textarea name="comment_content" rows="4" placeholder="Put your comment here" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;"></textarea>
         </div>
@@ -199,3 +214,4 @@ if ($hasAttachment) {
 
 </body>
 </html>
+

@@ -1,35 +1,109 @@
-<?php
+﻿<?php
 include '../auth/login_required.php';
 require_once '../config.php';
 include '../header.php';
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $title   = $_POST['title'] ?? '';
-    $content = $_POST['content'] ?? '';
-    $user_id = $_SESSION['user_id'];
-    $filename = '';
+if (!function_exists('html_escape')) {
+    function html_escape($value)
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+}
 
-    // ✅ 비밀글 체크박스
-    $is_secret = isset($_POST['is_secret']) ? 1 : 0;
+const MAX_UPLOAD_BYTES = 2097152; // 2 MB
+$allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'txt'];
 
-    if (isset($_FILES['upload']) && $_FILES['upload']['error'] === UPLOAD_ERR_OK){
-        $filename = $_FILES['upload']['name'];
-        $tmp_name = $_FILES['upload']['tmp_name'];
-        
+$title = '';
+$content = '';
+$isSecret = false;
+$errors = [];
 
-        
-        
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $title = trim((string) ($_POST['title'] ?? ''));
+    $content = trim((string) ($_POST['content'] ?? ''));
+    $isSecret = isset($_POST['is_secret']);
 
-        move_uploaded_file($tmp_name, __DIR__ . "/uploads/" . $filename);
+    if ($title === '' || mb_strlen($title) > 200) {
+        $errors[] = 'Title is required and must be 200 characters or fewer.';
     }
 
-    // ✅ isSecret 저장 (기존 스타일 유지: 단순 쿼리)
-    $sql = "INSERT INTO posts (user_id, title, content, filename, is_secret)
-            VALUES ($user_id, '$title', '$content', '$filename', $is_secret)";
-    $pdo->query($sql);
+    if ($content === '') {
+        $errors[] = 'Content is required.';
+    }
 
-    header("Location: board.php");
-    exit();
+    $filename = null;
+    if (!empty($_FILES['upload']['name'])) {
+        $file = $_FILES['upload'];
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            $errors[] = 'File upload failed. Please try again.';
+        } elseif ($file['size'] > MAX_UPLOAD_BYTES) {
+            $errors[] = 'Uploaded file exceeds the 2 MB size limit.';
+        } else {
+            $extension = strtolower((string) pathinfo($file['name'], PATHINFO_EXTENSION));
+            if ($extension && !in_array($extension, $allowedExtensions, true)) {
+                $errors[] = 'File type is not allowed.';
+            } else {
+                $uploadDir = __DIR__ . '/uploads';
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0755, true);
+                }
+
+                $generatedName = bin2hex(random_bytes(12));
+                if ($extension) {
+                    $generatedName .= '.' . $extension;
+                }
+
+                $targetPath = $uploadDir . '/' . $generatedName;
+
+                $mimeType = 'application/octet-stream';
+                if (class_exists('finfo')) {
+                    $finfo = new finfo(FILEINFO_MIME_TYPE);
+                    $detected = $finfo->file($file['tmp_name']);
+                    if (is_string($detected)) {
+                        $mimeType = $detected;
+                    }
+                } elseif (function_exists('mime_content_type')) {
+                    $detected = mime_content_type($file['tmp_name']);
+                    if (is_string($detected)) {
+                        $mimeType = $detected;
+                    }
+                }
+
+                $allowedMimePrefixes = ['image/', 'text/plain', 'application/pdf'];
+                $isMimeAllowed = false;
+                foreach ($allowedMimePrefixes as $prefix) {
+                    if (strpos($mimeType, $prefix) === 0) {
+                        $isMimeAllowed = true;
+                        break;
+                    }
+                }
+
+                if (!$isMimeAllowed) {
+                    $errors[] = 'Uploaded file type is not supported.';
+                } elseif (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+                    $errors[] = 'Failed to save the uploaded file. Please try again later.';
+                } else {
+                    $filename = 'uploads/' . $generatedName;
+                }
+            }
+        }
+    }
+
+    if (!$errors) {
+        $stmt = $pdo->prepare(
+            'INSERT INTO posts (user_id, title, content, filename, is_secret) VALUES (:user_id, :title, :content, :filename, :is_secret)'
+        );
+        $stmt->execute([
+            ':user_id' => (int) $_SESSION['user_id'],
+            ':title' => $title,
+            ':content' => $content,
+            ':filename' => $filename,
+            ':is_secret' => $isSecret ? 1 : 0,
+        ]);
+
+        header('Location: board.php');
+        exit();
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -171,6 +245,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             transform: translateY(0);
         }
 
+        .error-box {
+            margin-bottom: 20px;
+            padding: 16px;
+            border: 1px solid #d9534f;
+            background: rgba(217, 83, 79, 0.12);
+            border-radius: 6px;
+            color: #a94442;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
@@ -189,33 +272,42 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </head>
 <body>
     <div class="container">
-        <h1>✍️ New Post</h1>
+        <h1>New Post</h1>
 
+        <?php if ($errors): ?>
+            <div class="error-box">
+                <ul>
+                    <?php foreach ($errors as $error): ?>
+                        <li><?= html_escape($error) ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        <?php endif; ?>
 
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST" enctype="multipart/form-data" autocomplete="off">
             <div class="form-group">
                 <label for="title">Title</label>
-                <input type="text" id="title" name="title" placeholder="Enter post title..." required>
+                <input type="text" id="title" name="title" value="<?= html_escape($title) ?>" maxlength="200" required>
             </div>
 
             <div class="form-group">
                 <label for="content">Content</label>
-                <textarea id="content" name="content" placeholder="Write your content here..." required></textarea>
+                <textarea id="content" name="content" required><?= html_escape($content) ?></textarea>
             </div>
 
             <div class="form-group">
                 <label for="upload">Attach File (Optional)</label>
                 <div class="file-input-wrapper">
-                    <input type="file" id="upload" name="upload">
+                    <input type="file" id="upload" name="upload" accept=".jpg,.jpeg,.png,.gif,.pdf,.txt">
                 </div>
             </div>
 
             <div class="checkbox-wrapper">
-                <input type="checkbox" id="is_secret" name="is_secret" value="1">
-                <label for="is_secret">🔒 Set as private (only the author and administrators can view)</label>
+                <input type="checkbox" id="is_secret" name="is_secret" value="1" <?= $isSecret ? 'checked' : '' ?>>
+                <label for="is_secret">Set as private (only the author and administrators can view)</label>
             </div>
 
-            <button type="submit" class="submit-btn">📝 Create Post</button>
+            <button type="submit" class="submit-btn">Create Post</button>
         </form>
     </div>
 </body>

@@ -1,53 +1,65 @@
-<?php
-// board.php (검색 + 역할 컬럼 추가 버전, view.php로 검색 상태 유지하며 이동)
+﻿<?php
 include '../auth/login_required.php';
-require '../config.php'; // $pdo (PDO) 필요
+require '../config.php';
 include '../header.php';
-// --- 입력 파라미터 ---
-$q      = isset($_GET['q']) ? trim($_GET['q']) : '';
-$field  = isset($_GET['field']) ? $_GET['field'] : 'title'; // title|content|author|all
-$role   = isset($_GET['role']) ? trim($_GET['role']) : '';  // user|admin (옵션)
 
-// 화이트리스트
-$validFields = ['title','content','author','all'];
-if (!in_array($field, $validFields, true)) $field = 'title';
+if (!function_exists('html_escape')) {
+    function html_escape($value)
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+}
 
-// --- 동적 WHERE ---
+$q = (string) (filter_input(INPUT_GET, 'q', FILTER_UNSAFE_RAW) ?? '');
+$q = trim($q);
+if (strlen($q) > 200) {
+    $q = substr($q, 0, 200);
+}
+
+$field = (string) (filter_input(INPUT_GET, 'field', FILTER_UNSAFE_RAW) ?? 'title');
+$role = (string) (filter_input(INPUT_GET, 'role', FILTER_UNSAFE_RAW) ?? '');
+
+$validFields = ['title', 'content', 'author', 'all'];
+if (!in_array($field, $validFields, true)) {
+    $field = 'title';
+}
+
+$role = $role === 'admin' ? 'admin' : ($role === 'user' ? 'user' : '');
+
 $where = [];
 $params = [];
 
 if ($q !== '') {
+    $like = '%' . $q . '%';
     switch ($field) {
         case 'title':
-            $where[] = "p.title LIKE ?";
-            $params[] = "%$q%";
+            $where[] = 'p.title LIKE ?';
+            $params[] = $like;
             break;
         case 'content':
-            $where[] = "p.content LIKE ?";
-            $params[] = "%$q%";
+            $where[] = 'p.content LIKE ?';
+            $params[] = $like;
             break;
         case 'author':
-            $where[] = "u.username LIKE ?";
-            $params[] = "%$q%";
+            $where[] = 'u.username LIKE ?';
+            $params[] = $like;
             break;
-        case 'all':
         default:
-            $where[] = "(p.title LIKE ? OR p.content LIKE ? OR u.username LIKE ?)";
-            $params[] = "%$q%";
-            $params[] = "%$q%";
-            $params[] = "%$q%";
+            $where[] = '(p.title LIKE ? OR p.content LIKE ? OR u.username LIKE ?)';
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
             break;
     }
 }
 
 if ($role !== '') {
-    $where[] = "COALESCE(p.role, u.role) = ?";
+    $where[] = 'COALESCE(p.role, u.role) = ?';
     $params[] = $role;
 }
 
-$whereSql = $where ? ('WHERE '.implode(' AND ', $where)) : '';
+$whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 
-// --- 조회 SQL ---
 $sql = "
 SELECT
     p.id,
@@ -65,11 +77,10 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// 현재 검색 파라미터를 쿼리스트링으로 만들기 (view.php로 보낼 용도)
 $preserveQs = http_build_query([
-    'q'     => $q,
+    'q' => $q,
     'field' => $field,
-    'role'  => $role,
+    'role' => $role,
 ]);
 ?>
 <!doctype html>
@@ -83,41 +94,37 @@ $preserveQs = http_build_query([
   <div class="container">
   <h1>Board</h1>
 
-  <!-- 검색 폼 -->
   <form class="search" method="get" action="">
     <label>
       Filter
       <select name="field">
-        <option value="title"   <?= $field==='title'?'selected':''; ?>>Title</option>
-        <option value="content" <?= $field==='content'?'selected':''; ?>>Contents</option>
-        <option value="author"  <?= $field==='author'?'selected':''; ?>>Author</option>
-        <option value="all"     <?= $field==='all'?'selected':''; ?>>All(Title+Contents+Author)</option>
+        <option value="title"   <?= $field === 'title' ? 'selected' : '' ?>>Title</option>
+        <option value="content" <?= $field === 'content' ? 'selected' : '' ?>>Contents</option>
+        <option value="author"  <?= $field === 'author' ? 'selected' : '' ?>>Author</option>
+        <option value="all"     <?= $field === 'all' ? 'selected' : '' ?>>All(Title+Contents+Author)</option>
       </select>
     </label>
     <label>
       Keyword
-      <!-- XSS 취약점: htmlspecialchars 제거 -->
-      <input type="text" name="q" value="<?= $q ?>" placeholder="Search">
+      <input type="text" name="q" value="<?= html_escape($q) ?>" placeholder="Search">
     </label>
     <label>
       Role
       <select name="role">
-        <option value=""        <?= $role===''?'selected':''; ?>>All</option>
-        <option value="user"    <?= $role==='user'?'selected':''; ?>>user</option>
-        <option value="admin"   <?= $role==='admin'?'selected':''; ?>>admin</option>
+        <option value=""        <?= $role === '' ? 'selected' : '' ?>>All</option>
+        <option value="user"    <?= $role === 'user' ? 'selected' : '' ?>>user</option>
+        <option value="admin"   <?= $role === 'admin' ? 'selected' : '' ?>>admin</option>
       </select>
     </label>
     <button type="submit">Search</button>
-     <a href="/board/write.php"> ✍️ New Post</a> 
-    <?php if ($q!=='' || $role!==''): ?>
+    <a href="/board/write.php"> New Post</a>
+    <?php if ($q !== '' || $role !== ''): ?>
       <a href="board.php" style="align-self:center">Reset</a>
     <?php endif; ?>
   </form>
- 
-  <!-- 목록 -->
+
   <?php if (!$rows && $q !== ''): ?>
-    <!-- XSS 취약점: htmlspecialchars 제거 -->
-    <p class="no-results">"<?= $q ?>" No Result Found.</p>
+    <p class="no-results">"<?= html_escape($q) ?>" No Result Found.</p>
   <?php elseif (!$rows): ?>
     <p class="muted">No Content Found.</p>
   <?php else: ?>
@@ -134,14 +141,12 @@ $preserveQs = http_build_query([
       <tbody>
         <?php foreach ($rows as $r): ?>
           <?php
-            // XSS 취약점: htmlspecialchars 제거
-            $id = (int)$r['id'];
-            $title = $r['title']; // htmlspecialchars 제거
-            $author = $r['author_name']; // htmlspecialchars 제거
-            $created = $r['created_at']; // htmlspecialchars 제거
-            $roleName = $r['role_name']; // htmlspecialchars 제거
+            $id = (int) $r['id'];
+            $title = html_escape($r['title'] ?? '');
+            $author = html_escape($r['author_name'] ?? '');
+            $created = html_escape($r['created_at'] ?? '');
+            $roleName = html_escape($r['role_name'] ?? '');
 
-            // view.php로 보낼 링크 (현재 검색 상태 유지)
             $link = 'view.php?id=' . $id;
             if ($preserveQs !== '') {
                 $link .= '&' . $preserveQs;
@@ -149,9 +154,7 @@ $preserveQs = http_build_query([
           ?>
           <tr>
             <td><?= $id ?></td>
-            <!-- XSS 취약점: title에 스크립트 삽입 가능 -->
-            <td><a href="<?= $link ?>"><?= $title ?></a></td>
-            <!-- XSS 취약점: author에 스크립트 삽입 가능 -->
+            <td><a href="<?= html_escape($link) ?>"><?= $title ?></a></td>
             <td><?= $author ?></td>
             <td><?= $created ?></td>
             <td><?= $roleName ?></td>
@@ -161,7 +164,6 @@ $preserveQs = http_build_query([
     </table>
   <?php endif; ?>
   </div>
-
 
 </body>
 </html>

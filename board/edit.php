@@ -1,17 +1,25 @@
-<?php
+﻿<?php
 include '../auth/login_required.php';
 require_once '../config.php';
+require_once __DIR__ . '/../auth/csrf.php';
 include '../header.php';
+
+if (!function_exists('html_escape')) {
+    function html_escape($value)
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+}
+
+const EDIT_MAX_UPLOAD_BYTES = 2097152; // 2 MB
+$allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'txt'];
 
 $post_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
-// 게시글 정보 가져오기
-$sql = "SELECT p.*, u.role AS author_role
-        FROM posts p JOIN users u ON p.user_id = u.id
-        WHERE p.id = ?";
+$sql = "SELECT p.*, u.role AS author_role FROM posts p JOIN users u ON p.user_id = u.id WHERE p.id = ?";
 $stmt = $pdo->prepare($sql);
 $stmt->execute([$post_id]);
-$post = $stmt ? $stmt->fetch() : false;
+$post = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
 
 if (!$post) {
     http_response_code(404);
@@ -21,45 +29,119 @@ if (!$post) {
 $myId   = $_SESSION['user_id'] ?? 0;
 $myRole = $_SESSION['role'] ?? 'user';
 
-$isOwner  = ($myId == (int)$post['user_id']);
+$isOwner  = ((int) $myId === (int) $post['user_id']);
 $isAdmin  = ($myRole === 'admin');
 
-// 권한 확인: 작성자 또는 관리자만 수정 가능
 if (!($isOwner || $isAdmin)) {
     http_response_code(403);
     exit('You do not have permission to edit this post');
 }
 
-// POST 요청 처리 (수정 저장)
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $title   = $_POST['title'] ?? '';
-    $content = $_POST['content'] ?? '';
-    $is_secret = isset($_POST['is_secret']) ? 1 : 0;
-    $filename = $post['filename']; // 기존 파일명 유지
+$title = $post['title'] ?? '';
+$content = $post['content'] ?? '';
+$isSecret = (int) ($post['is_secret'] ?? 0) === 1;
+$currentFilename = $post['filename'] ?? null;
+$errors = [];
+$successMessage = '';
 
-    // 새 파일 업로드 처리
-    if (isset($_FILES['upload']) && $_FILES['upload']['error'] === UPLOAD_ERR_OK) {
-        $filename = $_FILES['upload']['name'];
-        $tmp_name = $_FILES['upload']['tmp_name'];
-        move_uploaded_file($tmp_name, __DIR__ . "/uploads/" . $filename);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
+        csrf_enforce($_POST['csrf_token'] ?? null);
+        csrf_regenerate();
+    } catch (RuntimeException $e) {
+        http_response_code(400);
+        $errors[] = $e->getMessage();
     }
 
-    // 게시글 업데이트
-    $sql = "UPDATE posts SET title = ?, content = ?, filename = ?, is_secret = ? WHERE id = ?";
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute([$title, $content, $filename, $is_secret, $post_id]);
+    $title = trim((string) ($_POST['title'] ?? ''));
+    $content = trim((string) ($_POST['content'] ?? ''));
+    $isSecret = isset($_POST['is_secret']);
 
-    header("Location: view.php?id=" . $post_id);
-    exit();
-}
+    if ($title === '' || mb_strlen($title) > 200) {
+        $errors[] = 'Title is required and must be 200 characters or fewer.';
+    }
 
-// HTML 이스케이프 함수
-if (!function_exists('html_escape')) {
-    function html_escape($value)
-    {
-        return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    if ($content === '') {
+        $errors[] = 'Content is required.';
+    }
+
+    $newFilename = $currentFilename;
+
+    if (!empty($_FILES['upload']['name'])) {
+        $file = $_FILES['upload'];
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            $errors[] = 'File upload failed. Please try again.';
+        } elseif ($file['size'] > EDIT_MAX_UPLOAD_BYTES) {
+            $errors[] = 'Uploaded file exceeds the 2 MB size limit.';
+        } else {
+            $extension = strtolower((string) pathinfo($file['name'], PATHINFO_EXTENSION));
+            if ($extension && !in_array($extension, $allowedExtensions, true)) {
+                $errors[] = 'File type is not allowed.';
+            } else {
+                $uploadDir = __DIR__ . '/uploads';
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0755, true);
+                }
+
+                $generatedName = bin2hex(random_bytes(12));
+                if ($extension) {
+                    $generatedName .= '.' . $extension;
+                }
+
+                $targetPath = $uploadDir . '/' . $generatedName;
+
+                $mimeType = 'application/octet-stream';
+                if (class_exists('finfo')) {
+                    $finfo = new finfo(FILEINFO_MIME_TYPE);
+                    $detected = $finfo->file($file['tmp_name']);
+                    if (is_string($detected)) {
+                        $mimeType = $detected;
+                    }
+                } elseif (function_exists('mime_content_type')) {
+                    $detected = mime_content_type($file['tmp_name']);
+                    if (is_string($detected)) {
+                        $mimeType = $detected;
+                    }
+                }
+
+                $allowedMimePrefixes = ['image/', 'text/plain', 'application/pdf'];
+                $isMimeAllowed = false;
+                foreach ($allowedMimePrefixes as $prefix) {
+                    if (strpos($mimeType, $prefix) === 0) {
+                        $isMimeAllowed = true;
+                        break;
+                    }
+                }
+
+                if (!$isMimeAllowed) {
+                    $errors[] = 'Uploaded file type is not supported.';
+                } elseif (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+                    $errors[] = 'Failed to save the uploaded file. Please try again later.';
+                } else {
+                    $newFilename = 'uploads/' . $generatedName;
+                }
+            }
+        }
+    }
+
+    if (!$errors) {
+        $stmt = $pdo->prepare(
+            'UPDATE posts SET title = :title, content = :content, filename = :filename, is_secret = :is_secret WHERE id = :id'
+        );
+        $stmt->execute([
+            ':title' => $title,
+            ':content' => $content,
+            ':filename' => $newFilename,
+            ':is_secret' => $isSecret ? 1 : 0,
+            ':id' => $post_id,
+        ]);
+
+        $successMessage = 'Post updated successfully.';
+        $currentFilename = $newFilename;
     }
 }
+
+$csrfToken = csrf_token();
 ?>
 <!DOCTYPE html>
 <html>
@@ -77,27 +159,6 @@ if (!function_exists('html_escape')) {
             font-weight: 700;
             padding-bottom: 1rem;
             border-bottom: 2px solid var(--sb-light-green);
-        }
-
-        .nav-links {
-            text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .nav-links a {
-            color: var(--sb-green);
-            text-decoration: none;
-            font-weight: 600;
-            padding: 8px 20px;
-            margin: 0 10px;
-            border-radius: 6px;
-            transition: all 0.3s ease;
-        }
-
-        .nav-links a:hover {
-            background: var(--sb-light-green);
         }
 
         .form-group {
@@ -135,12 +196,6 @@ if (!function_exists('html_escape')) {
             min-height: 200px;
         }
 
-        .file-input-wrapper {
-            position: relative;
-            display: inline-block;
-            width: 100%;
-        }
-
         .file-input-wrapper input[type="file"] {
             width: 100%;
             padding: 12px 15px;
@@ -148,18 +203,6 @@ if (!function_exists('html_escape')) {
             border-radius: 6px;
             cursor: pointer;
             transition: border-color 0.3s ease;
-        }
-
-        .file-input-wrapper input[type="file"]:hover {
-            border-color: var(--sb-green);
-        }
-
-        .current-file {
-            margin-top: 8px;
-            padding: 10px;
-            background: #f9f9f9;
-            border-left: 3px solid #5bc0de;
-            font-size: 0.9em;
         }
 
         .checkbox-wrapper {
@@ -179,13 +222,6 @@ if (!function_exists('html_escape')) {
             accent-color: var(--sb-green);
         }
 
-        .checkbox-wrapper label {
-            color: var(--sb-dark);
-            cursor: pointer;
-            user-select: none;
-            font-size: 0.95em;
-        }
-
         .submit-btn {
             width: 100%;
             padding: 15px;
@@ -202,10 +238,6 @@ if (!function_exists('html_escape')) {
         .submit-btn:hover {
             background-color: var(--sb-dark);
             transform: translateY(-2px);
-        }
-
-        .submit-btn:active {
-            transform: translateY(0);
         }
 
         .cancel-btn {
@@ -230,6 +262,24 @@ if (!function_exists('html_escape')) {
             transform: translateY(-2px);
         }
 
+        .feedback {
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            border-radius: 6px;
+        }
+
+        .feedback.error {
+            border: 1px solid #d9534f;
+            background: rgba(217, 83, 79, 0.12);
+            color: #a94442;
+        }
+
+        .feedback.success {
+            border: 1px solid #28a745;
+            background: rgba(40, 167, 69, 0.12);
+            color: #1d7a31;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
@@ -238,49 +288,61 @@ if (!function_exists('html_escape')) {
             h1 {
                 font-size: 1.5em;
             }
-
-            .nav-links a {
-                display: inline-block;
-                margin: 5px;
-            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>✏️ Edit Post</h1>
+        <h1>Edit Post</h1>
 
-        <form method="POST" enctype="multipart/form-data">
+        <?php if ($errors): ?>
+            <div class="feedback error">
+                <ul>
+                    <?php foreach ($errors as $error): ?>
+                        <li><?= html_escape($error) ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        <?php elseif ($successMessage): ?>
+            <div class="feedback success">
+                <?= html_escape($successMessage) ?>
+            </div>
+        <?php endif; ?>
+
+        <form method="POST" enctype="multipart/form-data" autocomplete="off">
+            <input type="hidden" name="csrf_token" value="<?= html_escape($csrfToken) ?>">
             <div class="form-group">
                 <label for="title">Title</label>
-                <input type="text" id="title" name="title" value="<?= html_escape($post['title']) ?>" required>
+                <input type="text" id="title" name="title" value="<?= html_escape($title) ?>" maxlength="200" required>
             </div>
 
             <div class="form-group">
                 <label for="content">Content</label>
-                <textarea id="content" name="content" required><?= html_escape($post['content']) ?></textarea>
+                <textarea id="content" name="content" required><?= html_escape($content) ?></textarea>
             </div>
 
             <div class="form-group">
                 <label for="upload">Attach File (Optional)</label>
                 <div class="file-input-wrapper">
-                    <input type="file" id="upload" name="upload">
+                    <input type="file" id="upload" name="upload" accept=".jpg,.jpeg,.png,.gif,.pdf,.txt">
                 </div>
-                <?php if (!empty($post['filename'])): ?>
+                <?php if ($currentFilename): ?>
                     <div class="current-file">
-                        <strong>Current file:</strong> <?= html_escape(basename($post['filename'])) ?>
+                        <strong>Current file:</strong> <?= html_escape(basename($currentFilename)) ?>
                     </div>
                 <?php endif; ?>
             </div>
 
             <div class="checkbox-wrapper">
-                <input type="checkbox" id="is_secret" name="is_secret" value="1" <?= (int)$post['is_secret'] === 1 ? 'checked' : '' ?>>
-                <label for="is_secret">🔒 Set as private (only the author and administrators can view)</label>
+                <input type="checkbox" id="is_secret" name="is_secret" value="1" <?= $isSecret ? 'checked' : '' ?>>
+                <label for="is_secret">Set as private (only the author and administrators can view)</label>
             </div>
 
-            <button type="submit" class="submit-btn">💾 Save Changes</button>
-            <a href="view.php?id=<?= (int)$post_id ?>" class="cancel-btn">Cancel</a>
+            <button type="submit" class="submit-btn">Save Changes</button>
+            <a href="view.php?id=<?= (int) $post_id ?>" class="cancel-btn">Cancel</a>
         </form>
     </div>
 </body>
 </html>
+
+
