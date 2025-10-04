@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($_FILES['upload']['name'])) {
         $file = $_FILES['upload'];
         if ($file['error'] !== UPLOAD_ERR_OK) {
-            $errors[] = 'File upload failed. Please try again.';
+            $errors[] = 'File upload failed. Error code: ' . $file['error'];
         } elseif ($file['size'] > MAX_UPLOAD_BYTES) {
             $errors[] = 'Uploaded file exceeds the 2 MB size limit.';
         } else {
@@ -69,13 +69,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
 
+                
+                $extensionMimeMap = [
+                    'jpg' => 'image/jpeg',
+                    'jpeg' => 'image/jpeg',
+                    'png' => 'image/png',
+                    'gif' => 'image/gif',
+                    'pdf' => 'application/pdf',
+                    'txt' => 'text/plain'
+                ];
+
                 $allowedMimePrefixes = ['image/', 'text/plain', 'application/pdf'];
                 $isMimeAllowed = false;
+
+                
                 foreach ($allowedMimePrefixes as $prefix) {
                     if (strpos($mimeType, $prefix) === 0) {
                         $isMimeAllowed = true;
                         break;
                     }
+                }
+
+                
+                if (!$isMimeAllowed && $extension && isset($extensionMimeMap[$extension])) {
+                    $isMimeAllowed = true;
                 }
 
                 if (!$isMimeAllowed) {

@@ -95,13 +95,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
 
+                
+                $extensionMimeMap = [
+                    'jpg' => 'image/jpeg',
+                    'jpeg' => 'image/jpeg',
+                    'png' => 'image/png',
+                    'gif' => 'image/gif',
+                    'pdf' => 'application/pdf',
+                    'txt' => 'text/plain'
+                ];
+
                 $allowedMimePrefixes = ['image/', 'text/plain', 'application/pdf'];
                 $isMimeAllowed = false;
+
+               
                 foreach ($allowedMimePrefixes as $prefix) {
                     if (strpos($mimeType, $prefix) === 0) {
                         $isMimeAllowed = true;
                         break;
                     }
+                }
+
+                
+                if (!$isMimeAllowed && $extension && isset($extensionMimeMap[$extension])) {
+                    $isMimeAllowed = true;
                 }
 
                 if (!$isMimeAllowed) {
