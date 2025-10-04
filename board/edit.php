@@ -129,6 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $successMessage = 'Post updated successfully.';
         $currentFilename = $newFilename;
+        $redirectToPost = true;
     }
 }
 ?>
@@ -296,6 +297,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="feedback success">
                 <?= html_escape($successMessage) ?>
             </div>
+            <?php if (isset($redirectToPost) && $redirectToPost): ?>
+                <script>
+                    setTimeout(function() {
+                        window.location.href = 'view.php?id=<?= (int) $post_id ?>';
+                    }, 1500); 
+                </script>
+            <?php endif; ?>
         <?php endif; ?>
 
         <form method="POST" enctype="multipart/form-data" autocomplete="off">
@@ -330,5 +338,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <a href="view.php?id=<?= (int) $post_id ?>" class="cancel-btn">Cancel</a>
         </form>
     </div>
+
+    
 </body>
 </html>
