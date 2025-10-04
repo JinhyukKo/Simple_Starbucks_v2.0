@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $content = trim((string) ($_POST['content'] ?? ''));
     $isSecret = isset($_POST['is_secret']);
 
-    if ($title === '' || mb_strlen($title) > 200) {
+    if ($title === '' || strlen($title) > 200) {
         $errors[] = 'Title is required and must be 200 characters or fewer.';
     }
 
@@ -127,9 +127,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ':id' => $post_id,
         ]);
 
-        $successMessage = 'Post updated successfully.';
-        $currentFilename = $newFilename;
-        $redirectToPost = true;
+        header('Location: board.php');
+        exit();
     }
 }
 ?>
