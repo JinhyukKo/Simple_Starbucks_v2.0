@@ -3,33 +3,62 @@ include '../auth/login_required.php';
 require_once '../config.php';
 include '../header.php';
 
+$post_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+
+// 게시글 정보 가져오기
+$sql = "SELECT p.*, u.role AS author_role
+        FROM posts p JOIN users u ON p.user_id = u.id
+        WHERE p.id = ?";
+$stmt = $pdo->prepare($sql);
+$stmt->execute([$post_id]);
+$post = $stmt ? $stmt->fetch() : false;
+
+if (!$post) {
+    http_response_code(404);
+    exit('The post does not exist');
+}
+
+$myId   = $_SESSION['user_id'] ?? 0;
+$myRole = $_SESSION['role'] ?? 'user';
+
+$isOwner  = ($myId == (int)$post['user_id']);
+$isAdmin  = ($myRole === 'admin');
+
+// 권한 확인: 작성자 또는 관리자만 수정 가능
+if (!($isOwner || $isAdmin)) {
+    http_response_code(403);
+    exit('You do not have permission to edit this post');
+}
+
+// POST 요청 처리 (수정 저장)
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $title   = $_POST['title'] ?? '';
     $content = $_POST['content'] ?? '';
-    $user_id = $_SESSION['user_id'];
-    $filename = '';
-
-    // ✅ 비밀글 체크박스
     $is_secret = isset($_POST['is_secret']) ? 1 : 0;
+    $filename = $post['filename']; // 기존 파일명 유지
 
-    if (isset($_FILES['upload']) && $_FILES['upload']['error'] === UPLOAD_ERR_OK){
+    // 새 파일 업로드 처리
+    if (isset($_FILES['upload']) && $_FILES['upload']['error'] === UPLOAD_ERR_OK) {
         $filename = $_FILES['upload']['name'];
         $tmp_name = $_FILES['upload']['tmp_name'];
-        
-
-        
-        
-
         move_uploaded_file($tmp_name, __DIR__ . "/uploads/" . $filename);
     }
 
-    // ✅ isSecret 저장 (기존 스타일 유지: 단순 쿼리)
-    $sql = "INSERT INTO posts (user_id, title, content, filename, is_secret)
-            VALUES ($user_id, '$title', '$content', '$filename', $is_secret)";
-    $pdo->query($sql);
+    // 게시글 업데이트
+    $sql = "UPDATE posts SET title = ?, content = ?, filename = ?, is_secret = ? WHERE id = ?";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$title, $content, $filename, $is_secret, $post_id]);
 
-    header("Location: board.php");
+    header("Location: view.php?id=" . $post_id);
     exit();
+}
+
+// HTML 이스케이프 함수
+if (!function_exists('html_escape')) {
+    function html_escape($value)
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -37,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Write Posts</title>
+    <title>Edit Post</title>
     <link rel="stylesheet" href="/style.css">
     <style>
         h1 {
@@ -125,6 +154,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             border-color: var(--sb-green);
         }
 
+        .current-file {
+            margin-top: 8px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-left: 3px solid #5bc0de;
+            font-size: 0.9em;
+        }
+
         .checkbox-wrapper {
             display: flex;
             align-items: center;
@@ -171,6 +208,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             transform: translateY(0);
         }
 
+        .cancel-btn {
+            width: 100%;
+            padding: 15px;
+            background-color: #6c757d;
+            color: var(--sb-white);
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .cancel-btn:hover {
+            background-color: #5a6268;
+            transform: translateY(-2px);
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 20px;
@@ -189,18 +248,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </head>
 <body>
     <div class="container">
-        <h1>✍️ New Post</h1>
-
+        <h1>✏️ Edit Post</h1>
 
         <form method="POST" enctype="multipart/form-data">
             <div class="form-group">
                 <label for="title">Title</label>
-                <input type="text" id="title" name="title" placeholder="Enter post title..." required>
+                <input type="text" id="title" name="title" value="<?= html_escape($post['title']) ?>" required>
             </div>
 
             <div class="form-group">
                 <label for="content">Content</label>
-                <textarea id="content" name="content" placeholder="Write your content here..." required></textarea>
+                <textarea id="content" name="content" required><?= html_escape($post['content']) ?></textarea>
             </div>
 
             <div class="form-group">
@@ -208,14 +266,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <div class="file-input-wrapper">
                     <input type="file" id="upload" name="upload">
                 </div>
+                <?php if (!empty($post['filename'])): ?>
+                    <div class="current-file">
+                        <strong>Current file:</strong> <?= html_escape(basename($post['filename'])) ?>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <div class="checkbox-wrapper">
-                <input type="checkbox" id="is_secret" name="is_secret" value="1">
+                <input type="checkbox" id="is_secret" name="is_secret" value="1" <?= (int)$post['is_secret'] === 1 ? 'checked' : '' ?>>
                 <label for="is_secret">🔒 Set as private (only the author and administrators can view)</label>
             </div>
 
-            <button type="submit" class="submit-btn">📝 Create Post</button>
+            <button type="submit" class="submit-btn">💾 Save Changes</button>
+            <a href="view.php?id=<?= (int)$post_id ?>" class="cancel-btn">Cancel</a>
         </form>
     </div>
 </body>

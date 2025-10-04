@@ -148,6 +148,7 @@ if ($hasAttachment) {
     <div style="margin-bottom: 30px;">
         <a href="board.php" style="padding: 8px 16px; background-color: #5bc0de; color: white; text-decoration: none; border-radius: 3px; display: inline-block;">List</a>
         <?php if ($isOwner || $isAdmin): ?>
+          <a href="edit.php?id=<?= (int)$post['id']; ?>" style="padding: 8px 16px; background-color: #f0ad4e; color: white; text-decoration: none; border-radius: 3px; display: inline-block;">Edit</a>
           <a href="delete.php?id=<?= (int)$post['id']; ?>" onclick="return confirm('Confirm to Delete')" style="padding: 8px 16px; background-color: #d9534f; color: white; text-decoration: none; border-radius: 3px; display: inline-block;">Delete</a>
         <?php endif; ?>
     </div>
