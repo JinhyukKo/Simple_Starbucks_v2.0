@@ -1,18 +1,8 @@
 ﻿<?php
 include '../auth/login_required.php';
 require_once '../config.php';
-require_once __DIR__ . '/../auth/csrf.php';
 
 $post_id = isset($_POST['id']) ? (int) $_POST['id'] : (isset($_GET['id']) ? (int) $_GET['id'] : 0);
-$token = $_POST['csrf_token'] ?? $_GET['csrf_token'] ?? null;
-
-try {
-    csrf_enforce($token);
-    csrf_regenerate();
-} catch (RuntimeException $e) {
-    http_response_code(400);
-    exit($e->getMessage());
-}
 
 $stmt = $pdo->prepare('SELECT user_id, filename FROM posts WHERE id = ?');
 $stmt->execute([$post_id]);

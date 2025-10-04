@@ -1,7 +1,6 @@
 ﻿<?php
 include '../auth/login_required.php';
 require_once '../config.php';
-require_once __DIR__ . '/../auth/csrf.php';
 include '../header.php';
 
 if (!function_exists('html_escape')) {
@@ -54,14 +53,6 @@ if ($isSecret) {
 $errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    try {
-        csrf_enforce($_POST['csrf_token'] ?? null);
-        csrf_regenerate();
-    } catch (RuntimeException $e) {
-        http_response_code(400);
-        exit($e->getMessage());
-    }
-
     if (isset($_POST['comment_content'])) {
         $cmt = trim((string) ($_POST['comment_content'] ?? ''));
         $uid = $_SESSION['user_id'];
@@ -109,8 +100,6 @@ if ($hasAttachment) {
     $downloadName = basename($post['filename']);
     $downloadUrl = 'uploads/' . rawurlencode($downloadName);
 }
-
-$csrfToken = csrf_token();
 ?>
 <!doctype html>
 <html lang="ko">
@@ -153,7 +142,6 @@ $csrfToken = csrf_token();
           <a href="edit.php?id=<?= (int) $post['id']; ?>" style="padding: 8px 16px; background-color: #f0ad4e; color: white; text-decoration: none; border-radius: 3px; display: inline-block;">Edit</a>
           <form method="post" action="delete.php" style="display:inline; margin-left:8px;">
             <input type="hidden" name="id" value="<?= (int) $post['id']; ?>">
-            <input type="hidden" name="csrf_token" value="<?= html_escape($csrfToken) ?>">
             <button type="submit" onclick="return confirm('Confirm to Delete')" style="padding: 8px 16px; background-color: #d9534f; color: white; border: none; border-radius: 3px; cursor: pointer;">Delete</button>
           </form>
         <?php endif; ?>
@@ -184,7 +172,6 @@ $csrfToken = csrf_token();
               <span style="margin-left: 15px;">
                 <form method="post" style="display:inline">
                   <input type="hidden" name="delete_comment_id" value="<?= (int) $c['id'] ?>">
-                  <input type="hidden" name="csrf_token" value="<?= html_escape($csrfToken) ?>">
                   <button type="submit" onclick="return confirm('Will you delete this comment?')" style="padding: 4px 8px; background-color: #d9534f; color: white; border: none; border-radius: 3px; cursor: pointer;">Delete</button>
                 </form>
               </span>
@@ -199,7 +186,6 @@ $csrfToken = csrf_token();
     <?php if (isset($_SESSION['user_id'])): ?>
       <h3 style="margin-top: 30px;">New Comment</h3>
       <form method="post">
-        <input type="hidden" name="csrf_token" value="<?= html_escape($csrfToken) ?>">
         <div style="margin-bottom: 10px;">
           <textarea name="comment_content" rows="4" placeholder="Put your comment here" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;"></textarea>
         </div>
@@ -214,4 +200,3 @@ $csrfToken = csrf_token();
 
 </body>
 </html>
-

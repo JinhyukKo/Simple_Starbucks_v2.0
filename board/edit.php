@@ -1,7 +1,6 @@
 ﻿<?php
 include '../auth/login_required.php';
 require_once '../config.php';
-require_once __DIR__ . '/../auth/csrf.php';
 include '../header.php';
 
 if (!function_exists('html_escape')) {
@@ -45,14 +44,6 @@ $errors = [];
 $successMessage = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    try {
-        csrf_enforce($_POST['csrf_token'] ?? null);
-        csrf_regenerate();
-    } catch (RuntimeException $e) {
-        http_response_code(400);
-        $errors[] = $e->getMessage();
-    }
-
     $title = trim((string) ($_POST['title'] ?? ''));
     $content = trim((string) ($_POST['content'] ?? ''));
     $isSecret = isset($_POST['is_secret']);
@@ -140,8 +131,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $currentFilename = $newFilename;
     }
 }
-
-$csrfToken = csrf_token();
 ?>
 <!DOCTYPE html>
 <html>
@@ -310,7 +299,6 @@ $csrfToken = csrf_token();
         <?php endif; ?>
 
         <form method="POST" enctype="multipart/form-data" autocomplete="off">
-            <input type="hidden" name="csrf_token" value="<?= html_escape($csrfToken) ?>">
             <div class="form-group">
                 <label for="title">Title</label>
                 <input type="text" id="title" name="title" value="<?= html_escape($title) ?>" maxlength="200" required>
@@ -344,5 +332,3 @@ $csrfToken = csrf_token();
     </div>
 </body>
 </html>
-
-
