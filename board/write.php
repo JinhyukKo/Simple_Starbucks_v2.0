@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($_FILES['upload']['name'])) {
         $file = $_FILES['upload'];
         if ($file['error'] !== UPLOAD_ERR_OK) {
-            $errors[] = 'File upload failed. Error code: ' . $file['error'];
+            $errors[] = 'File upload failed. ';
         } elseif ($file['size'] > MAX_UPLOAD_BYTES) {
             $errors[] = 'Uploaded file exceeds the 2 MB size limit.';
         } else {
