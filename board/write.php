@@ -10,8 +10,6 @@ if (!function_exists('html_escape')) {
     }
 }
 
-const MAX_UPLOAD_BYTES = 2097152; // 2 MB
-$allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'txt'];
 
 $title = '';
 $content = '';
@@ -31,67 +29,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Content is required.';
     }
 
+    // file upload 시큐어 코딩(기존 파일 업로드 로직에서 검증 로직 추가)
     $filename = null;
+    
     if (!empty($_FILES['upload']['name'])) {
         $file = $_FILES['upload'];
         if ($file['error'] !== UPLOAD_ERR_OK) {
             $errors[] = 'File upload failed. ';
-        } elseif ($file['size'] > MAX_UPLOAD_BYTES) {
-            $errors[] = 'Uploaded file exceeds the 2 MB size limit.';
         } else {
+            // 대소문자 구분없이 확장자 확인
             $extension = strtolower((string) pathinfo($file['name'], PATHINFO_EXTENSION));
+
+            //화이트 리스트 확장자와 비교
+            $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'txt'];
             if ($extension && !in_array($extension, $allowedExtensions, true)) {
                 $errors[] = 'File type is not allowed.';
             } else {
                 $uploadDir = __DIR__ . '/uploads';
-                if (!is_dir($uploadDir)) {
-                    mkdir($uploadDir, 0755, true);
-                }
+                
 
+                // 파일명 난수화
                 $generatedName = bin2hex(random_bytes(12));
                 if ($extension) {
                     $generatedName .= '.' . $extension;
                 }
-
                 $targetPath = $uploadDir . '/' . $generatedName;
 
-                $mimeType = 'application/octet-stream';
-                if (class_exists('finfo')) {
-                    $finfo = new finfo(FILEINFO_MIME_TYPE);
-                    $detected = $finfo->file($file['tmp_name']);
-                    if (is_string($detected)) {
-                        $mimeType = $detected;
-                    }
-                } elseif (function_exists('mime_content_type')) {
-                    $detected = mime_content_type($file['tmp_name']);
-                    if (is_string($detected)) {
-                        $mimeType = $detected;
-                    }
-                }
-
-                
-                $extensionMimeMap = [
-                    'jpg' => 'image/jpeg',
-                    'jpeg' => 'image/jpeg',
-                    'png' => 'image/png',
-                    'gif' => 'image/gif',
-                    'pdf' => 'application/pdf',
-                    'txt' => 'text/plain'
+                // Content-Type 검증
+                $MimeType = [
+                    'image/jpeg',
+                    'image/jpeg',
+                    'image/png',
+                    'image/gif',
+                    'application/pdf',
+                    'text/plain'
                 ];
-
-                $allowedMimePrefixes = ['image/', 'text/plain', 'application/pdf'];
                 $isMimeAllowed = false;
-
-                
-                foreach ($allowedMimePrefixes as $prefix) {
-                    if (strpos($mimeType, $prefix) === 0) {
-                        $isMimeAllowed = true;
-                        break;
-                    }
-                }
-
-                
-                if (!$isMimeAllowed && $extension && isset($extensionMimeMap[$extension])) {
+                if (in_array($file['type'], $MimeType, true)){
                     $isMimeAllowed = true;
                 }
 

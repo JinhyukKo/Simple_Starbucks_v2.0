@@ -9,12 +9,16 @@ if (!function_exists('html_escape')) {
     }
 }
 
+// 파일 다운로드 시큐어 코딩(기존 코드에서 수정이 아닌 추가)
+// 파일 다운로드 시 파일명이 아닌 해당 게시글의 id 키 값을 받아와 파라미터를 통한 경로 조작 방지
 $post_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
 
 $sql = "SELECT p.*, u.role AS author_role
         FROM posts p JOIN users u ON p.user_id = u.id
         WHERE p.id = ?";
+
+// id 키 값을 통한 SQLI 방지를 위한 prepare-statement 처리
 $stmt = $pdo->prepare($sql);
 $stmt->execute([$post_id]);
 $post = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
