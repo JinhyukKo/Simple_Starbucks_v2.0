@@ -43,6 +43,10 @@ $csrfToken = $_SESSION['csrf_token'];
 
 function fetchCart(PDO $pdo, int $userId): array
 {
+    // $stmt = $pdo->query("SELECT c.id AS cart_id, c.product_id, c.quantity, p.name, p.price, p.image_url FROM cart c LEFT JOIN products p ON p.id = c.product_id WHERE c.user_id = $userId ORDER BY c.id DESC");
+    // $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    
+    // sql injection - prepared statement
     $stmt = $pdo->prepare(
         'SELECT c.id AS cart_id, c.product_id, c.quantity, p.name, p.price, p.image_url
          FROM cart c
@@ -79,13 +83,19 @@ function upsertCartItem(PDO $pdo, int $userId, int $productId, $qty): string
     }
 
     $quantity = normalizeQuantity($qty);
-
+    // $productStmt = $pdo->query("SELECT id FROM products WHERE id = $productId");
+    // if (!$productStmt->fetchColumn()) {
+    //     throw new InvalidArgumentException('The requested product does not exist.');
+    // }
+    // $checkStmt = $pdo->query("SELECT quantity FROM cart WHERE user_id = $userId AND product_id = $productId");
+    // $row = $checkStmt->fetch(PDO::FETCH_ASSOC);
+    
+    // sql injection - prepared statement
     $productStmt = $pdo->prepare('SELECT id FROM products WHERE id = :product_id');
     $productStmt->execute([':product_id' => $productId]);
     if (!$productStmt->fetchColumn()) {
         throw new InvalidArgumentException('The requested product does not exist.');
     }
-
     $checkStmt = $pdo->prepare('SELECT quantity FROM cart WHERE user_id = :user_id AND product_id = :product_id');
     $checkStmt->execute([
         ':user_id' => $userId,
@@ -99,6 +109,9 @@ function upsertCartItem(PDO $pdo, int $userId, int $productId, $qty): string
         if ($newQty > MAX_CART_QUANTITY) {
             $newQty = MAX_CART_QUANTITY;
         }
+        // $updateStmt = $pdo->query("UPDATE cart SET quantity = $newQty WHERE user_id = $userId AND product_id = $productId");
+        
+        // sql injection - prepared statement
         $updateStmt = $pdo->prepare(
             'UPDATE cart SET quantity = :quantity WHERE user_id = :user_id AND product_id = :product_id'
         );
@@ -112,7 +125,9 @@ function upsertCartItem(PDO $pdo, int $userId, int $productId, $qty): string
             ? 'Quantity already at maximum allowed.'
             : 'Quantity updated.';
     }
-
+    // $insertStmt = $pdo->query("INSERT INTO cart (user_id, product_id, quantity) VALUES ($userId, $productId, $quantity)");
+    
+    // sql injection - prepared statement
     $insertStmt = $pdo->prepare(
         'INSERT INTO cart (user_id, product_id, quantity) VALUES (:user_id, :product_id, :quantity)'
     );
@@ -170,6 +185,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'update') {
         $cartId = filter_input(INPUT_POST, 'cart_id', FILTER_VALIDATE_INT) ?: 0;
         try {
+            // $quantity = normalizeQuantity($_POST['quantity'] ?? null);
+            // $updateStmt = $pdo->query("UPDATE cart SET quantity = $quantity WHERE id = $cartId AND user_id = $userId");
+            
+            // sql injection - prepared statement
             $quantity = normalizeQuantity($_POST['quantity'] ?? null);
             $updateStmt = $pdo->prepare(
                 'UPDATE cart SET quantity = :quantity WHERE id = :cart_id AND user_id = :user_id'
@@ -189,6 +208,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'remove') {
         $cartId = filter_input(INPUT_POST, 'cart_id', FILTER_VALIDATE_INT) ?: 0;
         try {
+            // $deleteStmt = $pdo->query("DELETE FROM cart WHERE id = $cartId AND user_id = $userId");
+            
+            // sql injection - prepared statement
             $deleteStmt = $pdo->prepare('DELETE FROM cart WHERE id = :cart_id AND user_id = :user_id');
             $deleteStmt->execute([
                 ':cart_id' => $cartId,
@@ -200,6 +222,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif ($action === 'clear') {
         try {
+            // $clearStmt = $pdo->query("DELETE FROM cart WHERE user_id = $userId");
+            
+            // sql injection - prepared statement
             $clearStmt = $pdo->prepare('DELETE FROM cart WHERE user_id = :user_id');
             $clearStmt->execute([':user_id' => $userId]);
             $messages[] = $clearStmt->rowCount() ? 'Cart cleared.' : 'Cart already empty.';

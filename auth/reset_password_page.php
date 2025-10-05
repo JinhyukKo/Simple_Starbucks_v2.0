@@ -8,7 +8,11 @@ if (!$token) {
     die("유효하지 않은 토큰입니다.");
 }
 
-// 토큰 유효성 검사
+// $sql = "SELECT user_id FROM password_resets WHERE token_hash = '$token' AND expires_at > NOW()";
+// $stmt = $pdo->query($sql);
+// $password_reset = $stmt->fetch();
+
+// 토큰 유효성 검사 - sqli > prepared statement
 $stmt = $pdo->prepare("SELECT user_id FROM password_resets WHERE token_hash = ? AND expires_at > NOW()");
 $stmt->execute([$token]);
 $password_reset = $stmt->fetch();
@@ -28,7 +32,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // 새 비밀번호 해시화
             $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
             
-            // 비밀번호 업데이트 및 토큰 초기화
+            // $sql = "UPDATE users SET password = '$hashed_password' WHERE id = {$password_reset['user_id']}";
+            // $stmt = $pdo->query($sql);
+            // 비밀번호 업데이트 및 토큰 초기화 - sqli prepared statement
             $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
             $stmt->execute([$hashed_password, $password_reset['user_id']]);
             

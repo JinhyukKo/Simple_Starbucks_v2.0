@@ -8,11 +8,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $category = $_POST["category"];
     $image_url = $_POST["image_url"];
     
+
+    // $sql = "INSERT INTO products (name, description, price, category, image_url) 
+    //         VALUES ('$name', '$description', $price, '$category', '$image_url')";
+    // $stmt = $pdo->query($sql);
+
+    // sql injection - prepared statement
     $sql = "INSERT INTO products (name, description, price, category, image_url) 
-            VALUES ('$name', '$description', $price, '$category', '$image_url')";
+        VALUES (?, ?, ?, ?, ?)";
     
         try {
-            $stmt = $pdo->query($sql);
+            $stmt = $pdo->prepare($sql);
+            $stmt -> execute([$name, $description, $price, $category, $image_url]);
             header("Location: /admin.php");
             exit();
         } catch (PDOException $e) {
@@ -29,6 +36,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'DELETE') {
 
     if (is_numeric($delete_id)) {
         try {
+            // $sql = "DELETE FROM products WHERE id=$delete_id";
+            // $stmt = $pdo->query($sql);
+
+            // sql injection - prepared statement
             $sql = "DELETE FROM products WHERE id = :id";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([':id' => $delete_id]);

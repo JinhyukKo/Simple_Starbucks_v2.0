@@ -4,7 +4,12 @@
     include '../header.php';
     
     $username = $_SESSION['username'];
-
+    
+    // $sql = "SELECT * FROM users WHERE username = '$username'";
+    // $stmt = $pdo->query($sql);
+    // $profile = $stmt->fetch();
+    
+    // sql injection - prepared statement 
     $sql = "SELECT * FROM users WHERE username = ?";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$username]);

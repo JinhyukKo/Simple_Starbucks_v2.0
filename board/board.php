@@ -29,6 +29,35 @@ $role = $role === 'admin' ? 'admin' : ($role === 'user' ? 'user' : '');
 $where = [];
 $params = [];
 
+// $whereSql = '';
+
+// if ($q !== '') {
+//     $like = '%' . $q . '%';
+//     switch ($field) {
+//         case 'title':
+//             $whereSql = "WHERE p.title LIKE '$like'";
+//             break;
+//         case 'content':
+//             $whereSql = "WHERE p.content LIKE '$like'";
+//             break;
+//         case 'author':
+//             $whereSql = "WHERE u.username LIKE '$like'";
+//             break;
+//         default:
+//             $whereSql = "WHERE (p.title LIKE '$like' OR p.content LIKE '$like' OR u.username LIKE '$like')";
+//             break;
+//     }
+// }
+
+// if ($role !== '') {
+//     if ($whereSql) {
+//         $whereSql .= " AND COALESCE(p.role, u.role) = '$role'";
+//     } else {
+//         $whereSql = "WHERE COALESCE(p.role, u.role) = '$role'";
+//     }
+// }
+
+// sqli - prepared statement
 if ($q !== '') {
     $like = '%' . $q . '%';
     switch ($field) {

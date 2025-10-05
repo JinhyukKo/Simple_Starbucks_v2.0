@@ -4,6 +4,11 @@ require_once '../config.php';
 
 $post_id = isset($_POST['id']) ? (int) $_POST['id'] : (isset($_GET['id']) ? (int) $_GET['id'] : 0);
 
+
+// $sql = "SELECT user_id, filename FROM posts WHERE id = $post_id";
+// $stmt = $pdo->query($sql);
+// $post = $stmt->fetch(PDO::FETCH_ASSOC);
+// sql injection - prepared statement
 $stmt = $pdo->prepare('SELECT user_id, filename FROM posts WHERE id = ?');
 $stmt->execute([$post_id]);
 $post = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -31,6 +36,9 @@ if (!empty($post['filename'])) {
     }
 }
 
+// $sqlDel = "DELETE FROM posts WHERE id = $post_id";
+// $stmtDel = $pdo->query($sqlDel);
+// sql injection - prepared statement
 $stmtDel = $pdo->prepare('DELETE FROM posts WHERE id = ?');
 $stmtDel->execute([$post_id]);
 

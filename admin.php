@@ -35,6 +35,11 @@ require './auth/is_admin.php';
 // }
 
 // 상품 목록 가져오기
+// $sql = "SELECT * FROM products ORDER BY created_at DESC";
+// $stmt = $pdo->query($sql);
+// $result = $stmt->fetchAll();
+
+// sql injection - 사용자 입력 없는 하드코딩된 쿼리, 동적 파라미터 X (안전한 코드)
 $sql = "SELECT * FROM products ORDER BY created_at DESC";
 $stmt = $pdo->query($sql);
 $result = $stmt->fetchAll();

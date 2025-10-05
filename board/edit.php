@@ -15,6 +15,9 @@ $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'txt'];
 
 $post_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
+// $sql = "SELECT p.*, u.role AS author_role FROM posts p JOIN users u ON p.user_id = u.id WHERE p.id = $post_id";
+// $stmt = $pdo->query($sql);
+// sql injection - prepared statement
 $sql = "SELECT p.*, u.role AS author_role FROM posts p JOIN users u ON p.user_id = u.id WHERE p.id = ?";
 $stmt = $pdo->prepare($sql);
 $stmt->execute([$post_id]);
@@ -133,6 +136,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (!$errors) {
+        // $sql = "UPDATE posts SET title = '$title', content = '$content', filename = '$newFilename', is_secret = " . ($isSecret ? 1 : 0) . " WHERE id = $post_id";
+        // $stmt = $pdo->query($sql);
+        
+        // sql injection - prepared statement
         $stmt = $pdo->prepare(
             'UPDATE posts SET title = :title, content = :content, filename = :filename, is_secret = :is_secret WHERE id = :id'
         );

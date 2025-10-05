@@ -107,6 +107,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (!$errors) {
+        // $stmt = $pdo->query("INSERT INTO posts (user_id, title, content, filename, is_secret) VALUES ({$_SESSION['user_id']}, '$title', '$content', '$filename', " . ($isSecret ? 1 : 0) . ")");
+        
+        // sql injection - prepared statement
         $stmt = $pdo->prepare(
             'INSERT INTO posts (user_id, title, content, filename, is_secret) VALUES (:user_id, :title, :content, :filename, :is_secret)'
         );

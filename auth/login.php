@@ -19,7 +19,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if ($_SESSION['login_attempts'] >= 5 && (time() - $_SESSION['last_attempt_time']) < 300) {
         echo '<h3>Login is Locked try again in 5 mins<br/></h3>';
     }
-
+    
+    // $sql = "SELECT * FROM users WHERE username = '$username'";
+    // $stmt = $pdo->query($sql);
+    
+    // sql injection - prepared statement
     $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
     $stmt->execute([$username]);
     $user = $stmt->fetch();

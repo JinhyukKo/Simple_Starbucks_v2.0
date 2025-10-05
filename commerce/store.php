@@ -27,6 +27,10 @@ include "../header.php";
 
         foreach ($categories as $category_key => $category_name) {
             try {
+                // $stmt = $pdo->query("SELECT * FROM products WHERE category = '$category_key' ORDER BY id");
+                // $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // sql injection - prepared statement
                 $stmt = $pdo->prepare("SELECT * FROM products WHERE category = ? ORDER BY id");
                 $stmt->execute([$category_key]);
                 $products = $stmt->fetchAll(PDO::FETCH_ASSOC);

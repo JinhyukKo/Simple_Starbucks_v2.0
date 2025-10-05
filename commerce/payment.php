@@ -5,7 +5,13 @@ require_once '../config.php';
 // 의도적으로 취약한 버전: GET 파라미터로 다른 사용자 결제 시도를 허용합니다.
 $activeUserId = isset($_GET['impersonate']) ? (int)$_GET['impersonate'] : $_SESSION['user_id'];
 
-// 취약한 balance 조회: 바인딩 없이 문자열 더하기 → SQL Injection 가능
+// function fetchUserBalance(PDO $pdo, $userId) {
+//     $stmt = $pdo->query("SELECT balance FROM users WHERE id = $userId");
+//     $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+//     return $row ? (int) $row['balance'] : 0;
+// }
+
+// sql injection - prepared statement
 function fetchUserBalance(PDO $pdo, $userId) {
     $stmt = $pdo->prepare("SELECT balance FROM users WHERE id = ?");
     $stmt->execute([$userId]);
@@ -14,7 +20,11 @@ function fetchUserBalance(PDO $pdo, $userId) {
     return $row ? (int) $row['balance'] : 0;
 }
 
-// 장바구니도 동일하게 취약한 방식으로 읽어 옵니다.
+// function loadCart(PDO $pdo, $userId) {
+//     $stmt = $pdo->query("SELECT c.id AS cart_id, c.quantity, p.id AS product_id, p.name, p.price, p.image_url FROM cart c INNER JOIN products p ON p.id = c.product_id WHERE c.user_id = $userId");
+//     $items = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+
+// sql injection - prepared statement
 function loadCart(PDO $pdo, $userId) {
     $stmt = $pdo->prepare("SELECT c.id AS cart_id, c.quantity, p.id AS product_id, p.name, p.price, p.image_url FROM cart c INNER JOIN products p ON p.id = c.product_id WHERE c.user_id = ?");
     $stmt->execute([$userId]);
@@ -58,6 +68,10 @@ if (isset($_GET['product_id']) && isset($_GET['quantity'])) {
     $quantity = (int)$_GET['quantity'];
 
     // 상품 정보 조회
+    // $stmt = $pdo->query("SELECT id AS product_id, name, price, image_url FROM products WHERE id = $productId");
+    // $product = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+    
+    // sql injection - prepared statement
     $stmt = $pdo->prepare("SELECT id AS product_id, name, price, image_url FROM products WHERE id = ?");
     $stmt->execute([$productId]);
     $product = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
@@ -105,6 +119,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Not enough points. (This message can also be tampered with.)';
     } else {
         try {
+            // $stmtUpd = $pdo->query("UPDATE users SET balance = balance - $claimedTotal WHERE id = $activeUserId");
+            // $stmtClr = $pdo->query("DELETE FROM cart WHERE user_id = $activeUserId");
+            // $stmtIns = $pdo->query("INSERT INTO purchase_history (user_id, total_amount, item_count, details) VALUES ($activeUserId, $claimedTotal, $claimedCount, '$claimedDetails')");
+            
+            // sqli - prepared statement
             // 트랜잭션 없이 순차 실행 → 중간 실패 시 데이터 불일치 발생 가능
             $stmtUpd = $pdo->prepare("UPDATE users SET balance = balance - ? WHERE id = ?");
             $stmtUpd->execute([$claimedTotal, $activeUserId]);

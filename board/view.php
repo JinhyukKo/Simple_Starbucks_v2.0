@@ -12,6 +12,11 @@ if (!function_exists('html_escape')) {
 
 $post_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
+// $sql = "SELECT p.*, u.username, u.role AS author_role FROM posts p JOIN users u ON p.user_id = u.id WHERE p.id = $post_id";
+// $stmt = $pdo->query($sql);
+// $post = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
+
+// sql injection - prepared statement
 $sql = "SELECT p.*, u.username, u.role AS author_role
         FROM posts p JOIN users u ON p.user_id = u.id
         WHERE p.id = ?";
@@ -60,6 +65,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (mb_strlen($cmt) > 2000) {
                 $errors[] = 'Comments must be 2000 characters or fewer.';
             } else {
+                // $sqlIns = "INSERT INTO comments (post_id, user_id, content, created_at) VALUES ($post_id, $uid, '$cmt', NOW())";
+                // $stmtIns = $pdo->query($sqlIns);
+                
+                // sql injection - prepared statement
                 $sqlIns = "INSERT INTO comments (post_id, user_id, content, created_at)
                            VALUES (?, ?, ?, NOW())";
                 $stmtIns = $pdo->prepare($sqlIns);
@@ -72,6 +81,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // if (isset($_POST['delete_comment_id'])) {
+    //     $cid = (int) $_POST['delete_comment_id'];
+    //     $stmtRow = $pdo->query("SELECT user_id FROM comments WHERE id = $cid");
+    //     $row = $stmtRow->fetch(PDO::FETCH_ASSOC);
+    //     if ($row && ($isAdmin || (int) $row['user_id'] === (int) $_SESSION['user_id'])) {
+    //         $stmtDel = $pdo->query("DELETE FROM comments WHERE id = $cid");
+    //     }
+    // }
+    
+    // sql injection - prepared statement
     if (isset($_POST['delete_comment_id'])) {
         $cid = (int) $_POST['delete_comment_id'];
         $stmtRow = $pdo->prepare('SELECT user_id FROM comments WHERE id = ?');
@@ -86,6 +105,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// $stmtComments = $pdo->query("SELECT c.id, c.content, c.created_at, c.user_id, u.username FROM comments c JOIN users u ON c.user_id = u.id WHERE c.post_id = $post_id ORDER BY c.created_at ASC");
+// $comments = $stmtComments->fetchAll(PDO::FETCH_ASSOC);
+
+// sql injection - prepared statement
 $stmtComments = $pdo->prepare("\n    SELECT c.id, c.content, c.created_at, c.user_id, u.username\n    FROM comments c JOIN users u ON c.user_id = u.id\n    WHERE c.post_id = ?\n    ORDER BY c.created_at ASC\n");
 $stmtComments->execute([$post_id]);
 $comments = $stmtComments->fetchAll(PDO::FETCH_ASSOC);

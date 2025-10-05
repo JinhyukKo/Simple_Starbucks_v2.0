@@ -7,6 +7,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $email = $_POST['email'];
     $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
 
+    // $sql = "INSERT INTO users (username, email, password) VALUES ('$username', '$email', '$password')";
+    // $stmt = $pdo->query($sql);
+
+    // sqli - prepared statement
     $stmt = $pdo->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
     $stmt->execute([$username, $email, $password]);
     echo "Regisration Compelete. <a href='login.php'>Login</a>";

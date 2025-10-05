@@ -5,6 +5,11 @@
 
     $username = $_SESSION['username'];
 
+    // $sql = "SELECT * FROM users WHERE username = '$username'";
+    // $stmt = $pdo->query($sql);
+    // $profile = $stmt->fetch();
+    
+    // sql injection - prepared statement
     $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
     $stmt->execute([$username]);
     $profile = $stmt->fetch();
@@ -26,7 +31,10 @@
             move_uploaded_file($tmp_name, "profile/" . $filename);
         }
 
+        // $sql = "UPDATE users SET email = '$email', password = '$password', profile = '$filename' WHERE id = $user_id";
+        // $stmtUp = $pdo->query($sql);   
         
+        // sql injection - prepared statement
         $sql = "UPDATE users SET email = ?, password = ?, profile = ? WHERE id = ?";
         $stmtUp = $pdo->prepare($sql);
         $stmtUp->execute([$email, $password, $filename, $user_id]);
