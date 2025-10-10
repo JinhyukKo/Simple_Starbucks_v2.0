@@ -3,10 +3,17 @@ include '../auth/login_required.php';
 require_once '../config.php';
 include '../header.php';
 
+$html_escape_enabled = true; // Set to false to disable HTML escaping for this view.
+
 if (!function_exists('html_escape')) {
     function html_escape($value)
     {
-        return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        global $html_escape_enabled;
+        $value = (string) $value;
+
+        return $html_escape_enabled
+            ? htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+            : $value;
     }
 }
 
