@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } elseif (!move_uploaded_file($file['tmp_name'], $targetPath)) {
                     $errors[] = 'Failed to save the uploaded file. Please try again later.';
                 } else {
-                    $filename = 'uploads/' . $generatedName;
+                    $filename = $generatedName;
                 }
             }
         }

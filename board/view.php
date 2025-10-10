@@ -118,14 +118,6 @@ $safeTitle = html_escape($post['title']);
 $safeAuthor = html_escape($post['username']);
 $safeCreatedAt = html_escape($post['created_at']);
 $contentHtml = nl2br(html_escape($post['content']));
-
-$hasAttachment = !empty($post['filename']);
-if ($hasAttachment) {
-    $downloadName = basename($post['filename']);
-    // Remove 'uploads/' prefix from filename for download URL
-    $fileParam = str_replace('uploads/', '', $post['filename']);
-    $downloadUrl = 'download.php?file=' . urlencode($fileParam);
-}
 ?>
 <!doctype html>
 <html lang="ko">
@@ -153,11 +145,11 @@ if ($hasAttachment) {
         <?= $contentHtml ?>
     </div>
 
-    <?php if ($hasAttachment): ?>
+    <?php if (!empty($post['filename'])): ?>
         <div style="margin-bottom: 20px; padding: 10px; background-color: #f9f9f9; border-left: 3px solid #5bc0de;">
             <strong>Attachment:</strong>
-            <a href="<?= html_escape($downloadUrl) ?>" download>
-                <?= html_escape($downloadName) ?>
+            <a href="download.php?file=<?= urlencode(($post['filename'])) ?>">
+                <?= html_escape(($post['filename'])) ?>
             </a>
         </div>
     <?php endif; ?>
