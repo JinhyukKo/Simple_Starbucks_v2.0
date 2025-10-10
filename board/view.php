@@ -128,7 +128,9 @@ $contentHtml = nl2br(html_escape($post['content']));
 $hasAttachment = !empty($post['filename']);
 if ($hasAttachment) {
     $downloadName = basename($post['filename']);
-    $downloadUrl = 'download.php?id=' . (int) $post_id;
+    // Remove 'uploads/' prefix from filename for download URL
+    $fileParam = str_replace('uploads/', '', $post['filename']);
+    $downloadUrl = 'download.php?file=' . urlencode($fileParam);
 }
 ?>
 <!doctype html>
