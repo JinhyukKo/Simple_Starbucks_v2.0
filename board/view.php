@@ -3,20 +3,14 @@ include '../auth/login_required.php';
 require_once '../config.php';
 include '../header.php';
 
-$html_escape_enabled = true; // Set to false to disable HTML escaping for this view.
+$html_escape_enabled = true;
 
 if (!function_exists('html_escape')) {
-    function html_escape($value)
-    {
+    function html_escape($v) {
         global $html_escape_enabled;
-        $value = (string) $value;
-
-        return $html_escape_enabled
-            ? htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
-            : $value;
+        return $html_escape_enabled ? htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : (string)$v;
     }
 }
-
 $post_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
 // $sql = "SELECT p.*, u.username, u.role AS author_role FROM posts p JOIN users u ON p.user_id = u.id WHERE p.id = $post_id";
