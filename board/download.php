@@ -7,14 +7,20 @@ if (empty($filename)) {
     exit('파일명이 필요합니다');
 }
 
-// 경로 구분자 및 상위 디렉토리 참조 차단
+// 다중 URL 디코딩
+while ($filename !== ($decoded = urldecode($filename))) {
+    $filename = $decoded;
+}
+
+
+// 경로 구분자 및 상위 디렉토리 참조 필터링 (공백으로 치환)
+//$filename = str_replace(['..', '/', '\\'], '', $filename);
 if (strpos($filename, '..') !== false ||
     strpos($filename, '/') !== false ||
     strpos($filename, '\\') !== false ) {
     http_response_code(400);
     exit('잘못된 파일명입니다');
 }
-
 
 $filepath = __DIR__ . '/uploads/' . $filename;
 
